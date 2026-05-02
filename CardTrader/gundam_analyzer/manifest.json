@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Gundam CardTrader Analyzer",
+  "version": "1.0",
+  "description": "Analizza spese per set, categoria e rarità su CardTrader",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://www.cardtrader.com/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+  {
+    "matches": [
+      "https://www.cardtrader.com/*/orders/buyer_future_order*",
+      "https://www.cardtrader.com/it/orders/buyer_future_order*"
+    ],
+    "js": ["content.js"]
+  }
+]
+}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { width: 250px; padding: 10px; font-family: sans-serif; }
+    .row { display: flex; justify-content: space-between; margin: 5px 0; border-bottom: 1px solid #eee; }
+    h4 { margin: 10px 0 5px 0; color: #2980b9; }
+    .total { font-weight: bold; font-size: 1.1em; color: #27ae60; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h3>Gundam Stats</h3>
+  <h4>Rarita</h4>
+  <div id="rare-list"></div>
+  <h4>Spesa</h4>
+  <div id="cat-list"></div>
+  <div class="total">Total: <span id="total-val">€0.00</span></div>
+  <hr>
+  <button onclick="chrome.runtime.openOptionsPage()">Configura Range</button>
+  <script src="popup.js"></script>
+</body>
+</html>
