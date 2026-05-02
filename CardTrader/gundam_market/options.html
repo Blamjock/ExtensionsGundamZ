@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Opzioni CardTrader</title>
+  <style>
+    body {
+      width: 350px;
+      padding: 15px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    button:hover { background-color: #0056b3; }
+    #status {
+      margin-top: 12px;
+      font-size: 0.9em;
+      color: #333;
+    }
+    .hint {
+      font-size: 0.85em;
+      color: #555;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h3>Impostazioni Token CardTrader</h3>
+  <p class="hint">Incolla qui il tuo API token e salvalo. Il token verrà usato dal popup per le richieste API.</p>
+  <input type="text" id="apiToken" placeholder="Inserisci qui il token API">
+  <button id="saveTokenBtn">Salva Token</button>
+  <div id="status"></div>
+  <script src="options.js"></script>
+</body>
+</html>

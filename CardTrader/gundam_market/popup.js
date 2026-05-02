@@ -1,9 +1,12 @@
-const IL_TUO_TOKEN = "INSERISCI_QUI_IL_TUO_TOKEN_DI_ACCESSO";
+const TOKEN_STORAGE_KEY = 'cardtraderApiToken';
+let IL_TUO_TOKEN = '';
+
 document.addEventListener('DOMContentLoaded', () => {
     const cardInput = document.getElementById('cardName');
     const btnCerca = document.getElementById('searchBtn');
     const btnAnalizza = document.getElementById('analyzeBtn');
     const btnListSet = document.getElementById('listSetBtn');
+    const btnOptions = document.getElementById('openOptionsBtn');
 
     if (cardInput) {
         cardInput.addEventListener('input', () => {
@@ -11,9 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (btnCerca) btnCerca.addEventListener('click', () => eseguiRicerca(cardInput.value, 'singolo'));
-    if (btnAnalizza) btnAnalizza.addEventListener('click', () => eseguiRicerca(cardInput.value, 'top10'));
+    loadToken();
+
+    if (btnCerca) btnCerca.addEventListener('click', async () => await eseguiRicerca(cardInput.value, 'singolo'));
+    if (btnAnalizza) btnAnalizza.addEventListener('click', async () => await eseguiRicerca(cardInput.value, 'top10'));
     if (btnListSet) btnListSet.addEventListener('click', () => listingCompletoSet("GD04"));
+    if (btnOptions) btnOptions.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
     window.addEventListener('click', (event) => {
         const modal = document.getElementById('jsonModal');
@@ -21,11 +27,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+function loadToken() {
+    return new Promise(resolve => {
+        chrome.storage.local.get([TOKEN_STORAGE_KEY], result => {
+            IL_TUO_TOKEN = result[TOKEN_STORAGE_KEY] || '';
+            resolve(IL_TUO_TOKEN);
+        });
+    });
+}
+
 async function eseguiRicerca(query, modo) {
     const resultDiv = document.getElementById('result');
-    const headers = { 'Authorization': `Bearer ${IL_TUO_TOKEN}`, 'Content-Type': 'application/json' };
-    
+    query = query ? query.trim() : '';
+    const cardInput = document.getElementById('cardName');
+    if (cardInput) cardInput.value = query;
     if (!query) return;
+
+    await loadToken();
+    if (!IL_TUO_TOKEN) {
+        resultDiv.innerHTML = "❌ Token non impostato. Apri Impostazioni Token per incollare il tuo token API.";
+        return;
+    }
+
+    const headers = { 'Authorization': `Bearer ${IL_TUO_TOKEN}`, 'Content-Type': 'application/json' };
     resultDiv.innerHTML = "⌛ Connessione ai server...";
 
     try {
