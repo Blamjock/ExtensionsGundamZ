@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CardTrader Analyzer",
   "version": "0.10",
-  "description": "Analizza i prezzi delle carte Gundam tramite le API di CardTrader.",
+  "description": "Analyze Gundam card prices using the CardTrader API.",
   "permissions": [
     "storage"
   ],

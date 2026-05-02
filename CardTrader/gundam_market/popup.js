@@ -36,6 +36,32 @@ function loadToken() {
     });
 }
 
+function rarityRank(rarity) {
+    const key = (rarity || '').toString().trim().toLowerCase();
+    const ranks = {
+        lr: 0,
+        r: 1,
+        nc: 2,
+        c: 3,
+        promo: 4,
+        legendary: 0,
+        'super rare': 1,
+        rare: 1,
+        uncommon: 2,
+        common: 3,
+        other: 5,
+        altro: 5
+    };
+    return ranks[key] !== undefined ? ranks[key] : 5;
+}
+
+function compareByRarityAndPrice(a, b) {
+    const rankA = rarityRank(a.properties_hash?.gundam_rarity);
+    const rankB = rarityRank(b.properties_hash?.gundam_rarity);
+    if (rankA !== rankB) return rankA - rankB;
+    return (a.price?.cents || 0) - (b.price?.cents || 0);
+}
+
 async function eseguiRicerca(query, modo) {
     const resultDiv = document.getElementById('result');
     query = query ? query.trim() : '';
@@ -70,23 +96,23 @@ async function eseguiRicerca(query, modo) {
 
             if (listings.length === 0) continue;
 
-            // 1. Ordiniamo per prezzo crescente
-            listings.sort((a, b) => a.price.cents - b.price.cents);
+            // 1. Ordiniamo per rarità e prezzo
+            listings.sort(compareByRarityAndPrice);
 
             // --- LOGICA MODIFICATA PER GESTIRE I 10 RISULTATI ---
             let offerteDaMostrare = [];
 
             if (modo === 'top10') {
-                // Selezioniamo le prime 10 offerte che hanno la rarità gundam
+                // Selezioniamo le prime 10 offerte che hanno la rarità gundam e le ordiniamo per rarità
                 offerteDaMostrare = listings
                     .filter(l => l.properties_hash && l.properties_hash.gundam_rarity)
                     .slice(0, 10);
             } else {
-                // Logica originale per il tasto "Cerca" (Miglior Zero o più basso)
+                // Logica migliorata per il tasto "Cerca" (Miglior Zero o offerta con rarità più alta e prezzo più basso)
                 const zeroListings = listings.filter(l => 
                     (l.user && l.user.can_sell_sealed_with_ct_zero === true) || 
                     (l.can_be_sent_with_zero === true || l.can_be_sent_with_zero === "true")
-                ).sort((a, b) => a.price.cents - b.price.cents);
+                ).sort(compareByRarityAndPrice);
 
                 const selected = zeroListings.length > 0 ? zeroListings[0] : listings[0];
                 if (selected.properties_hash && selected.properties_hash.gundam_rarity) {
@@ -99,7 +125,7 @@ async function eseguiRicerca(query, modo) {
                                        (selectedOffer.can_be_sent_with_zero === true || selectedOffer.can_be_sent_with_zero === "true");
                 const venditore = (selectedOffer.user && selectedOffer.user.username) ? selectedOffer.user.username : "Sconosciuto";
                 const rarity = selectedOffer.properties_hash.gundam_rarity;
-                const metaName = bp.meta_name || "N/A";
+                const metaName = bp.meta_name ? bp.meta_name.replace(/-/g, ' ').toUpperCase() : "N/A";
                 const qta = selectedOffer.quantity || 0;
                 const purchaseUrl = `https://www.cardtrader.com/it/cards/${bp.slug}`;
 
@@ -110,7 +136,7 @@ async function eseguiRicerca(query, modo) {
                         <div style="margin-bottom: 8px; display:flex; justify-content:space-between; align-items:start;">
                             <div>
                                 <b style="font-size:1.1em; color:#222;">${bp.name}</b><br>
-                                <span style="font-size:0.75em; color:#555;">Meta: ${metaName} | <b>Rarità: ${rarity}</b></span><br>
+                                <span style="font-size:0.75em; color:#555;">Code: ${metaName} | <b>Rarità: ${rarity}</b></span><br>
                                 <span style="font-size:0.7em; color:#007bff; font-weight:bold;">${bp.expansion_name}</span>
                             </div>
                             <button class="inspect-btn" data-json='${JSON.stringify(debugData).replace(/'/g, "&apos;")}' style="font-size:0.6em; cursor:pointer; background:#6c757d; color:white; border:none; border-radius:3px; padding:2px 5px;">DEBUG API</button>
