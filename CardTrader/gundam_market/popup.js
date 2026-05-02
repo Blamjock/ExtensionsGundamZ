@@ -16,6 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadToken();
 
+    chrome.storage.local.get(['contextSearchQuery'], ({ contextSearchQuery }) => {
+        if (contextSearchQuery) {
+            const query = contextSearchQuery.trim();
+            if (query) {
+                cardInput.value = query;
+                eseguiRicerca(query, 'singolo');
+            }
+            chrome.storage.local.remove('contextSearchQuery');
+        }
+    });
+
     if (btnCerca) btnCerca.addEventListener('click', async () => await eseguiRicerca(cardInput.value, 'singolo'));
     if (btnAnalizza) btnAnalizza.addEventListener('click', async () => await eseguiRicerca(cardInput.value, 'top10'));
     if (btnListSet) btnListSet.addEventListener('click', () => listingCompletoSet("GD04"));
