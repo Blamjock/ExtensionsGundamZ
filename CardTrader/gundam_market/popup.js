@@ -47,6 +47,20 @@ function loadToken() {
     });
 }
 
+function loadLowestPrice(bpId) {
+    return new Promise(resolve => {
+        const key = `lowestPrice_${bpId}`;
+        chrome.storage.local.get([key], result => {
+            resolve(result[key] || null);
+        });
+    });
+}
+
+function saveLowestPrice(bpId, priceCents) {
+    const key = `lowestPrice_${bpId}`;
+    chrome.storage.local.set({ [key]: priceCents });
+}
+
 function rarityRank(rarity) {
     const key = (rarity || '').toString().trim().toLowerCase();
     const ranks = {
@@ -138,6 +152,17 @@ async function eseguiRicerca(query, modo) {
         if (modo === 'top10') allOffers = allOffers.slice(0, 10);
 
         for (const { bp, offer: selectedOffer } of allOffers) {
+            // Carica il prezzo più basso attuale
+            const currentLowest = await loadLowestPrice(bp.id);
+            const currentPrice = selectedOffer.price.cents;
+            let lowestPriceDisplay;
+            if (currentLowest === null || currentPrice < currentLowest) {
+                saveLowestPrice(bp.id, currentPrice);
+                lowestPriceDisplay = `€${(currentPrice / 100).toFixed(2)}`;
+            } else {
+                lowestPriceDisplay = `€${(currentLowest / 100).toFixed(2)}`;
+            }
+
             const isZeroAvailable = (selectedOffer.user && selectedOffer.user.can_sell_sealed_with_ct_zero === true) || 
                                    (selectedOffer.can_be_sent_with_zero === true || selectedOffer.can_be_sent_with_zero === "true");
             const venditore = (selectedOffer.user && selectedOffer.user.username) ? selectedOffer.user.username : "Sconosciuto";
@@ -165,6 +190,7 @@ async function eseguiRicerca(query, modo) {
                     <div class="result-details">
                         <div class="result-prices">
                             <span>Prezzo: <span class="result-price-value">€${(selectedOffer.price.cents/100).toFixed(2)}</span></span>
+                            <span>Prezzo più basso storico: <span class="result-price-value">${lowestPriceDisplay}</span></span>
                             <span class="result-seller">Venditore: <b>${venditore}</b></span>
                             <span class="result-qty">Quantità: <b>${qta}</b></span>
                         </div>

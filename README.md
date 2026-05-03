@@ -50,6 +50,7 @@ The `gundam_market` extension requires a valid CardTrader API token.
 - Right-click.
 - Choose 'Search CardTrader Price' from the menu.
 5. The results are displayed directly in the popup, with the price, seller, and link to the card on CardTrader.
+6. The extension tracks the lowest historical price for each card and displays it below the current price. It updates only when a lower price is found.
 
 ## How to use the `gundam_analyzer` extension
 
