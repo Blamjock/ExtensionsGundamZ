@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Gundam CardTrader Analyzer",
+  "name": "Mobile Price Analyzer",
   "version": "0.10",
-  "description": "Analyze expenses by set, category, and rarity on CardTrader for Gundam cards. Includes a price history graph and a list of the last 10 listings.",
+  "description": "Analyze expenses by set, category, and rarity on CardTrader for Gundam cards, includes in the price history graph.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": ["https://www.cardtrader.com/*"],
   "action": {
