@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 380px; padding: 15px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; margin: 0; }
+    h3 { margin: 0 0 12px; color: #333; }
+    #timer-box { background: #2c3e50; color: #ecf0f1; padding: 10px; text-align: center; border-radius: 6px; margin-bottom: 10px; font-size: 1.05em; }
+    #countdown { font-weight: bold; color: #3498db; }
+    #status-box { font-size: 0.78em; color: #555; margin-bottom: 12px; min-height: 1.2em; }
+    #status-box.err { color: #c0392b; }
+    #status-box.ok { color: #1e8449; }
+    .section { margin-bottom: 14px; }
+    .section-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.04em; color: #777; margin-bottom: 6px; }
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row input[type="number"] { flex: 1; }
+    .checks { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+    input[type="text"], input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; width: 100%; }
+    label.check { display: flex; align-items: center; gap: 6px; font-size: 0.9em; color: #333; user-select: none; }
+    button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+    #saveTokenBtn { background: #34495e; color: white; }
+    #saveTokenBtn:hover { background: #2c3e50; }
+    #addBtn { background: #27ae60; color: white; }
+    #addBtn:hover { background: #219150; }
+    #savePollBtn { background: #2980b9; color: white; padding: 8px 12px; white-space: nowrap; }
+    #saveAddrBtn { background: #7f8c8d; color: white; }
+    .collapsible {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+    .collapsible summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 8px 10px;
+      font-size: 0.82em;
+      font-weight: 600;
+      color: #555;
+      user-select: none;
+    }
+    .collapsible summary::-webkit-details-marker { display: none; }
+    .collapsible summary::before {
+      content: "▸ ";
+      color: #2980b9;
+    }
+    .collapsible[open] summary::before { content: "▾ "; }
+    .collapsible[open] summary {
+      border-bottom: 1px solid #eee;
+    }
+    .collapsible-body {
+      padding: 10px;
+    }
+    #debugPanel { display: none; gap: 8px; }
+    #debugPanel.show { display: flex; flex-direction: column; }
+    #openDebugBtn { background: #8e44ad; color: white; }
+    #runCheckBtn { background: #d35400; color: white; }
+    #testSoundBtn { background: #16a085; color: white; }
+    #list { border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 12px; max-height: 280px; overflow-y: auto; }
+    .card-item { background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 0.85em; border-left: 4px solid #bdc3c7; }
+    .card-item.ch-both { border-left-color: #8e44ad; }
+    .card-item.ch-zero { border-left-color: #27ae60; }
+    .card-item.ch-normal { border-left-color: #2980b9; }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .card-meta { color: #666; margin-top: 4px; font-size: 0.92em; line-height: 1.4; }
+    .prices { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .price-line { display: flex; flex-direction: column; gap: 2px; }
+    .price-line .tag { font-weight: 600; }
+    .price-line .val { color: #444; font-variant-numeric: tabular-nums; }
+    .price-line .tag.zero { color: #1e8449; }
+    .price-line .tag.normal { color: #1a5276; }
+    .price-line .now-under {
+      color: #1e8449;
+      font-weight: 700;
+      text-decoration: underline;
+      text-decoration-color: #27ae60;
+      text-underline-offset: 2px;
+    }
+    .price-line.off { opacity: 0.45; }
+    .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 0.85em; font-weight: 600; }
+    .badge.on { background: #d5f5e3; color: #1e8449; }
+    .badge.off { background: #f0f0f0; color: #777; }
+    .badge.zero { background: #d5f5e3; color: #1e8449; }
+    .badge.normal { background: #d6eaf8; color: #1a5276; }
+    .badge.both { background: #f5eef8; color: #6c3483; }
+    .remove { color: #e74c3c; cursor: pointer; font-weight: bold; padding: 0 4px; flex-shrink: 0; }
+    .empty { color: #999; font-size: 0.85em; text-align: center; padding: 12px 0; }
+    .archive-collapsible {
+      margin-top: 12px;
+      border-color: #27ae60;
+    }
+    .archive-collapsible > summary {
+      color: #1e8449;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .archive-collapsible > summary::before { color: #27ae60; }
+    .summary-meta {
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 0.95em;
+    }
+    #cartArchiveHeader {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+    #clearArchiveBtn {
+      background: #e74c3c;
+      color: white;
+      padding: 5px 8px;
+      font-size: 0.75em;
+    }
+    #cartArchiveList { max-height: 200px; overflow-y: auto; }
+    .archive-item {
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .archive-item .meta { color: #555; margin-top: 2px; font-size: 0.92em; }
+    #cartArchiveTotal {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+    #cartArchiveTotal b { color: #2ecc71; }
+  </style>
+</head>
+<body>
+  <h3>Price Alert</h3>
+
+  <div id="timer-box">
+    Prossimo check: <span id="countdown">--:--</span>
+  </div>
+  <div id="status-box"></div>
+
+  <div class="section-label">Carte monitorate</div>
+  <div id="list"></div>
+
+  <details id="tokenDetails" class="collapsible" data-panel="tokenPanelOpen">
+    <summary>API Token</summary>
+    <div class="input-group collapsible-body">
+      <input type="text" id="apiToken" placeholder="Il tuo API Token" autocomplete="off">
+      <button type="button" id="saveTokenBtn">Salva token</button>
+    </div>
+  </details>
+
+  <details id="pollDetails" class="collapsible" data-panel="pollPanelOpen">
+    <summary>Intervallo polling (1–5 min)</summary>
+    <div class="collapsible-body">
+      <div class="row">
+        <input type="number" id="pollMinutes" min="1" max="5" step="1" value="2">
+        <button type="button" id="savePollBtn">Applica</button>
+      </div>
+    </div>
+  </details>
+
+  <details id="addCardDetails" class="collapsible" data-panel="addCardPanelOpen">
+    <summary>Aggiungi carta</summary>
+    <div class="input-group collapsible-body">
+      <input type="text" id="cardLabel" placeholder="Nome / label (opzionale)">
+      <input type="number" id="blueprintId" placeholder="Blueprint ID (es. 400910)">
+      <input type="number" id="targetPrice" step="0.01" min="0" placeholder="Prezzo Max (€)">
+      <div class="section-label" style="margin: 2px 0 0;">Cosa controllare</div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="watchZero" checked> CT Zero</label>
+        <label class="check"><input type="checkbox" id="watchNormal" checked> Normale (spedizione diretta)</label>
+      </div>
+      <label class="check"><input type="checkbox" id="autoCart"> Auto-cart se sotto soglia</label>
+      <details id="addrDetails" class="collapsible" data-panel="addrPanelOpen">
+        <summary>Indirizzo cart (consigliato per auto-cart)</summary>
+        <div class="input-group collapsible-body">
+          <input type="text" id="addrName" placeholder="Nome">
+          <input type="text" id="addrStreet" placeholder="Via">
+          <div class="row">
+            <input type="text" id="addrZip" placeholder="CAP">
+            <input type="text" id="addrCity" placeholder="Città">
+          </div>
+          <div class="row">
+            <input type="text" id="addrState" placeholder="Provincia (es. FI)">
+            <input type="text" id="addrCountry" placeholder="Paese (es. IT)" maxlength="2">
+          </div>
+          <button type="button" id="saveAddrBtn">Salva indirizzo</button>
+        </div>
+      </details>
+      <button type="button" id="addBtn">Aggiungi alla lista</button>
+    </div>
+  </details>
+
+  <details id="debugDetails" class="collapsible" data-panel="debugPanelOpen">
+    <summary>Debug</summary>
+    <div class="input-group collapsible-body">
+      <label class="check"><input type="checkbox" id="alertSound" checked> Suono all'alert</label>
+      <button type="button" id="testSoundBtn">Prova suono</button>
+      <label class="check"><input type="checkbox" id="debugMode"> Modalità debug API</label>
+      <div id="debugPanel">
+        <button type="button" id="runCheckBtn">Esegui check ora</button>
+        <button type="button" id="openDebugBtn">Apri log request/response</button>
+      </div>
+    </div>
+  </details>
+
+  <details id="archiveDetails" class="collapsible archive-collapsible" data-panel="archivePanelOpen">
+    <summary>
+      Archivio carrello
+      <span id="archiveSummaryMeta" class="summary-meta">0 · €0.00</span>
+    </summary>
+    <div class="collapsible-body">
+      <div id="cartArchiveHeader">
+        <button type="button" id="clearArchiveBtn" title="Svuota archivio">Svuota</button>
+      </div>
+      <div id="cartArchiveList"></div>
+      <div id="cartArchiveTotal">
+        <span><span id="archiveCount">0</span> carte · <span id="archiveQty">0</span> pezzi</span>
+        <span>Totale: <b id="archiveSpend">€0.00</b></span>
+      </div>
+    </div>
+  </details>
+
+  <script src="popup.js"></script>
+</body>
+</html>

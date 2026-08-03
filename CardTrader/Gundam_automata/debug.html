@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Price Alert — Debug API</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      display: flex;
+      height: 100vh;
+    }
+    #sidebar {
+      width: 280px;
+      border-right: 1px solid #313244;
+      display: flex;
+      flex-direction: column;
+      background: #181825;
+    }
+    #sidebar h1 {
+      font-size: 0.95em;
+      margin: 0;
+      padding: 14px 12px;
+      border-bottom: 1px solid #313244;
+      color: #89b4fa;
+    }
+    #toolbar {
+      padding: 8px;
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid #313244;
+    }
+    #toolbar button {
+      flex: 1;
+      padding: 7px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8em;
+    }
+    #refreshBtn { background: #89b4fa; color: #1e1e2e; }
+    #clearBtn { background: #f38ba8; color: #1e1e2e; }
+    #runBtn { background: #a6e3a1; color: #1e1e2e; }
+    #logList {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .log-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid #313244;
+      cursor: pointer;
+      font-size: 0.8em;
+    }
+    .log-item:hover { background: #313244; }
+    .log-item.active { background: #45475a; }
+    .log-item .meta { color: #a6adc8; font-size: 0.9em; margin-top: 3px; }
+    .ok { color: #a6e3a1; }
+    .err { color: #f38ba8; }
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    #main header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #313244;
+      font-size: 0.9em;
+    }
+    #panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border-right: 1px solid #313244;
+    }
+    .panel:last-child { border-right: none; }
+    .panel h2 {
+      margin: 0;
+      padding: 8px 12px;
+      font-size: 0.8em;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #a6adc8;
+      background: #181825;
+      border-bottom: 1px solid #313244;
+    }
+    pre {
+      margin: 0;
+      padding: 12px;
+      overflow: auto;
+      flex: 1;
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #empty {
+      padding: 40px;
+      text-align: center;
+      color: #6c7086;
+    }
+  </style>
+</head>
+<body>
+  <aside id="sidebar">
+    <h1>Debug API CardTrader</h1>
+    <div id="toolbar">
+      <button type="button" id="runBtn" title="Esegui check ora">Check</button>
+      <button type="button" id="refreshBtn">Refresh</button>
+      <button type="button" id="clearBtn">Svuota</button>
+    </div>
+    <div id="logList"></div>
+  </aside>
+  <main id="main">
+    <header id="detailTitle">Seleziona una richiesta</header>
+    <div id="panels">
+      <section class="panel">
+        <h2>Request</h2>
+        <pre id="reqPre">—</pre>
+      </section>
+      <section class="panel">
+        <h2>Response</h2>
+        <pre id="resPre">—</pre>
+      </section>
+    </div>
+  </main>
+  <script src="debug.js"></script>
+</body>
+</html>

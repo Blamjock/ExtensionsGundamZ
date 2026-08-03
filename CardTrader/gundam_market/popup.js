@@ -62,22 +62,23 @@ function saveLowestPrice(bpId, priceCents) {
 }
 
 function rarityRank(rarity) {
-    const key = (rarity || '').toString().trim().toLowerCase();
+    const key = (rarity || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+    const normalized = key.replace(/\++$/g, '');
     const ranks = {
         lr: 0,
-        r: 1,
-        nc: 2,
-        c: 3,
-        promo: 4,
         legendary: 0,
-        'super rare': 1,
+        r: 1,
         rare: 1,
+        'super rare': 1,
+        nc: 2,
         uncommon: 2,
+        c: 3,
         common: 3,
+        promo: 4,
         other: 5,
         altro: 5
     };
-    return ranks[key] !== undefined ? ranks[key] : 5;
+    return ranks[normalized] !== undefined ? ranks[normalized] : 5;
 }
 
 function compareByRarityAndPrice(a, b) {
@@ -156,11 +157,17 @@ async function eseguiRicerca(query, modo) {
             const currentLowest = await loadLowestPrice(bp.id);
             const currentPrice = selectedOffer.price.cents;
             let lowestPriceDisplay;
+            let percentageDisplay = '';
+            
             if (currentLowest === null || currentPrice < currentLowest) {
                 saveLowestPrice(bp.id, currentPrice);
                 lowestPriceDisplay = `€${(currentPrice / 100).toFixed(2)}`;
             } else {
                 lowestPriceDisplay = `€${(currentLowest / 100).toFixed(2)}`;
+                const percentage = ((currentPrice - currentLowest) / currentLowest) * 100;
+                const percentageSign = percentage > 0 ? '+' : '';
+                const percentageColor = percentage > 0 ? '#d32f2f' : '#2e7d32';
+                percentageDisplay = ` <span style="color: ${percentageColor}; font-weight: bold;">${percentageSign}${percentage.toFixed(2)}%</span>`;
             }
 
             const isZeroAvailable = (selectedOffer.user && selectedOffer.user.can_sell_sealed_with_ct_zero === true) || 
@@ -190,7 +197,7 @@ async function eseguiRicerca(query, modo) {
                     <div class="result-details">
                         <div class="result-prices">
                             <span>Prezzo: <span class="result-price-value">€${(selectedOffer.price.cents/100).toFixed(2)}</span></span>
-                            <span>Prezzo più basso storico: <span class="result-price-value">${lowestPriceDisplay}</span></span>
+                            <span>Prezzo più basso storico: <span class="result-price-value">${lowestPriceDisplay}</span>${percentageDisplay}</span>
                             <span class="result-seller">Venditore: <b>${venditore}</b></span>
                             <span class="result-qty">Quantità: <b>${qta}</b></span>
                         </div>
