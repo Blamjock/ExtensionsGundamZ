@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "CardTrader Price Alert",
-  "version": "1.9",
+  "version": "2.2",
   "description": "Alert Zero/Normale con campanella; min/now; auto-cart; archivio; debug.",
-  "permissions": ["storage", "alarms", "notifications", "offscreen"],
-  "host_permissions": ["https://api.cardtrader.com/*"],
+  "permissions": ["storage", "alarms", "notifications", "offscreen", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://api.cardtrader.com/*",
+    "https://www.cardtrader.com/*"
+  ],
   "web_accessible_resources": [
     {
       "resources": ["sound_campanella.m4a", "sound_campanella.m4r"],

@@ -3,6 +3,9 @@ const ALARM_NAME = "sniperLoop";
 const DEFAULT_POLL_MINUTES = 2;
 const ICON_URL = "icons/icon-128.png";
 const DEBUG_LOG_MAX = 30;
+const HISTORY_MAX_AGE_MS = 32 * 24 * 60 * 60 * 1000;
+const HISTORY_MAX_POINTS = 2500;
+const HISTORY_KEEP_RECENT = 720;
 
 chrome.runtime.onInstalled.addListener(async () => {
     await migrateStorage();
@@ -43,6 +46,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
     if (message?.type === "testAlertSound") {
         playAlertSound({ force: true })
+            .then(() => sendResponse({ ok: true }))
+            .catch((err) => sendResponse({ ok: false, error: String(err) }));
+        return true;
+    }
+    if (message?.type === "removePriceHistory") {
+        removePriceHistory(message.bId)
             .then(() => sendResponse({ ok: true }))
             .catch((err) => sendResponse({ ok: false, error: String(err) }));
         return true;
@@ -276,6 +285,63 @@ async function saveWatchList(list) {
     await chrome.storage.local.set({ watchList: list });
 }
 
+/**
+ * Aggiunge un campione prezzi per blueprint e prune (max ~32 giorni / 2500 punti).
+ * @param {Record<string, {t:number,z:?number,n:?number}>} samplesByBid
+ */
+async function mergePriceHistory(samplesByBid) {
+    const keys = Object.keys(samplesByBid);
+    if (!keys.length) return;
+
+    const data = await chrome.storage.local.get(["priceHistory"]);
+    const all = data.priceHistory && typeof data.priceHistory === "object"
+        ? { ...data.priceHistory }
+        : {};
+
+    for (const key of keys) {
+        const sample = samplesByBid[key];
+        if (!sample || sample.t == null) continue;
+        if (sample.z == null && sample.n == null) continue;
+        const prev = Array.isArray(all[key]) ? all[key] : [];
+        all[key] = pruneHistory([...prev, {
+            t: sample.t,
+            z: sample.z ?? null,
+            n: sample.n ?? null
+        }]);
+    }
+
+    await chrome.storage.local.set({ priceHistory: all });
+}
+
+function pruneHistory(points) {
+    const cutoff = Date.now() - HISTORY_MAX_AGE_MS;
+    let arr = points
+        .filter((p) => p && Number.isFinite(p.t) && p.t >= cutoff)
+        .sort((a, b) => a.t - b.t);
+
+    if (arr.length <= HISTORY_MAX_POINTS) return arr;
+
+    const recent = arr.slice(-HISTORY_KEEP_RECENT);
+    const older = arr.slice(0, -HISTORY_KEEP_RECENT);
+    const budget = Math.max(0, HISTORY_MAX_POINTS - recent.length);
+    if (budget <= 0 || older.length === 0) return recent.slice(-HISTORY_MAX_POINTS);
+
+    const step = older.length / budget;
+    const thinned = [];
+    for (let i = 0; i < budget; i++) {
+        thinned.push(older[Math.min(older.length - 1, Math.floor(i * step))]);
+    }
+    return [...thinned, ...recent];
+}
+
+async function removePriceHistory(bId) {
+    const data = await chrome.storage.local.get(["priceHistory"]);
+    if (!data.priceHistory) return;
+    const all = { ...data.priceHistory };
+    delete all[String(bId)];
+    await chrome.storage.local.set({ priceHistory: all });
+}
+
 async function valutaCanale({ item, next, listing, channel, token }) {
     const currentPrice = listing.price.cents / 100;
     const productId = listing.id;
@@ -349,6 +415,7 @@ async function avviaControlloLista() {
     let errors = 0;
     let checked = 0;
     let alerts = 0;
+    const historySamples = {};
 
     for (let i = 0; i < list.length; i++) {
         const item = list[i];
@@ -405,6 +472,12 @@ async function avviaControlloLista() {
             }
             next.lastSeenPrice = seenCandidates.length ? Math.min(...seenCandidates) : null;
 
+            historySamples[String(item.bId)] = {
+                t: checkedAt,
+                z: next.lastSeenZero,
+                n: next.lastSeenNormal
+            };
+
             if (item.watchZero && bestZero) {
                 const r = await valutaCanale({
                     item,
@@ -437,6 +510,7 @@ async function avviaControlloLista() {
     }
 
     await saveWatchList(list);
+    await mergePriceHistory(historySamples);
 
     if (errors > 0 && checked === 0) {
         await setLastStatus(false, `Check fallito (${errors} errori API)`);
