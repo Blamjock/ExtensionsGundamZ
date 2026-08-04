@@ -221,6 +221,8 @@
     .card-item.ch-zero { border-left-color: #27ae60; }
     .card-item.ch-normal { border-left-color: #2980b9; }
     .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .card-main { flex: 1; min-width: 0; display: flex; gap: 8px; align-items: flex-start; }
+    .card-body { flex: 1; min-width: 0; }
     .card-meta { color: #666; margin-top: 4px; font-size: 0.92em; line-height: 1.4; }
     .prices { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
     .price-line { display: flex; flex-direction: column; gap: 2px; }
@@ -236,6 +238,17 @@
       text-underline-offset: 2px;
     }
     .price-line.off { opacity: 0.45; }
+    .trend {
+      display: inline-block;
+      font-weight: 800;
+      font-size: 0.95em;
+      line-height: 1;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+    .trend.down { color: #27ae60; }
+    .trend.up { color: #e74c3c; }
+    .trend.eq { color: #2980b9; font-size: 0.85em; }
     .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 0.85em; font-weight: 600; }
     .badge.on { background: #d5f5e3; color: #1e8449; }
     .badge.off { background: #f0f0f0; color: #777; }
@@ -256,6 +269,8 @@
       justify-content: center;
       cursor: pointer;
       line-height: 0;
+      flex-shrink: 0;
+      margin-top: 1px;
     }
     .chart-btn:hover { background: #eaf2f8; border-color: #2980b9; }
     .chart-btn svg { width: 14px; height: 14px; display: block; }

@@ -345,6 +345,7 @@ document.addEventListener("click", async (e) => {
     const index = parseInt(e.target.dataset.index, 10);
 
     if (listType === "archive") {
+        if (!confirm("Rimuovere questa carta dall'archivio?")) return;
         const data = await chrome.storage.local.get(["cartArchive"]);
         const archive = data.cartArchive || [];
         archive.splice(index, 1);
@@ -352,6 +353,8 @@ document.addEventListener("click", async (e) => {
         loadCartArchive();
         return;
     }
+
+    if (!confirm("Rimuovere questa carta dal monitoraggio?")) return;
 
     const data = await chrome.storage.local.get(["watchList"]);
     const list = data.watchList || [];
@@ -663,8 +666,21 @@ function priceLine(tag, tagClass, nowValue, minValue, checkedAt, watching, targe
         : `[ Now: ${nowTxt} - ${when} ]`;
     return `<div class="price-line ${off}">
       <span class="tag ${tagClass}">${tag}${watchNote}</span>
-      <span class="val">Min: ${minTxt} - ${nowBlock}</span>
+      <span class="val">Min: ${minTxt} - ${nowBlock}${trendIcon(nowValue, minValue)}</span>
     </div>`;
+}
+
+function trendIcon(nowValue, minValue) {
+    const now = Number(nowValue);
+    const min = Number(minValue);
+    if (!Number.isFinite(now) || !Number.isFinite(min)) return "";
+    if (now < min) {
+        return ' <span class="trend down" title="Now minore del Min">↓</span>';
+    }
+    if (now > min) {
+        return ' <span class="trend up" title="Now maggiore del Min">↑</span>';
+    }
+    return ' <span class="trend eq" title="Now uguale al Min">=</span>';
 }
 
 async function loadAll() {
@@ -835,22 +851,24 @@ function loadList() {
 
             div.innerHTML = `
                 <div class="card-head">
-                  <div>
-                    <div>${title} ${channelBadge(item)}</div>
-                    <div class="card-meta">
-                      Max: <b>${formatEuro(item.target)}</b>
-                      · <span class="badge ${autoClass}">${autoText}</span>
-                    </div>
-                    <div class="prices">
-                      ${priceLine("CT Zero", "zero", item.lastSeenZero, item.minZero, item.lastSeenZeroAt, item.watchZero, item.target)}
-                      ${priceLine("Normale", "normal", item.lastSeenNormal, item.minNormal, item.lastSeenNormalAt, item.watchNormal, item.target)}
-                    </div>
-                    ${lastAlert ? `<div class="card-meta">${lastAlert}</div>` : ""}
-                  </div>
-                  <div class="card-actions">
+                  <div class="card-main">
                     <button type="button" class="chart-btn" data-bid="${item.bId}" data-label="${safeLabel}" title="Grafico prezzi">
                       ${chartIcon}
                     </button>
+                    <div class="card-body">
+                      <div>${title} ${channelBadge(item)}</div>
+                      <div class="card-meta">
+                        Max: <b>${formatEuro(item.target)}</b>
+                        · <span class="badge ${autoClass}">${autoText}</span>
+                      </div>
+                      <div class="prices">
+                        ${priceLine("CT Zero", "zero", item.lastSeenZero, item.minZero, item.lastSeenZeroAt, item.watchZero, item.target)}
+                        ${priceLine("Normale", "normal", item.lastSeenNormal, item.minNormal, item.lastSeenNormalAt, item.watchNormal, item.target)}
+                      </div>
+                      ${lastAlert ? `<div class="card-meta">${lastAlert}</div>` : ""}
+                    </div>
+                  </div>
+                  <div class="card-actions">
                     <span class="remove" data-list="watch" data-index="${index}" title="Rimuovi">✖</span>
                   </div>
                 </div>
