@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Price Alert — Carte monitorate</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      color: #2c3e50;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.05em;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #searchWrap {
+      flex: 1;
+      min-width: 200px;
+      max-width: 480px;
+      position: relative;
+    }
+    #search {
+      width: 100%;
+      padding: 9px 36px 9px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95em;
+      background: #fff;
+      color: #2c3e50;
+    }
+    #search:focus { outline: 2px solid #3498db; outline-offset: 1px; }
+    #clearSearch {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #7f8c8d;
+      cursor: pointer;
+      padding: 4px 8px;
+      font-size: 1em;
+      display: none;
+    }
+    #clearSearch.show { display: block; }
+    #clearSearch:hover { color: #c0392b; }
+    .meta-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #bdc3c7;
+    }
+    #countInfo b { color: #3498db; }
+    #sort {
+      padding: 7px 10px;
+      border: 1px solid #4a6278;
+      border-radius: 4px;
+      background: #34495e;
+      color: #ecf0f1;
+      font-size: 0.85em;
+      cursor: pointer;
+    }
+    #filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: #34495e;
+      border-radius: 14px;
+      font-size: 0.78em;
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid transparent;
+    }
+    .filter-chip input { margin: 0; }
+    .filter-chip:has(input:checked) {
+      border-color: #3498db;
+      background: #1a5276;
+    }
+    main {
+      flex: 1;
+      padding: 14px;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+      align-content: start;
+    }
+    .card {
+      background: #fff;
+      border-radius: 6px;
+      padding: 10px 12px;
+      border-left: 4px solid #bdc3c7;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      font-size: 0.82em;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 0;
+    }
+    .card.ch-both { border-left-color: #8e44ad; }
+    .card.ch-zero { border-left-color: #27ae60; }
+    .card.ch-normal { border-left-color: #2980b9; }
+    .card.under {
+      background: #eafaf1;
+      box-shadow: 0 0 0 1px #a9dfbf;
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .card-title {
+      font-weight: 700;
+      color: #2c3e50;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .card-title small {
+      font-weight: 500;
+      color: #7f8c8d;
+      font-size: 0.9em;
+    }
+    .card-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .card-actions .remove-btn {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 1px solid #e74c3c;
+      border-radius: 3px;
+      background: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #e74c3c;
+      font-weight: bold;
+      font-size: 0.85em;
+      line-height: 0;
+    }
+    .card-actions .remove-btn:hover { background: #fdecea; }
+    .row-meta {
+      color: #666;
+      font-size: 0.95em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      align-items: center;
+    }
+    .prices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 8px;
+      margin-top: 2px;
+    }
+    .price-cell {
+      background: #f8f9fa;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .price-cell.off { opacity: 0.4; }
+    .price-cell .lbl {
+      display: block;
+      font-size: 0.75em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .price-cell .lbl.zero { color: #1e8449; }
+    .price-cell .lbl.normal { color: #1a5276; }
+    .price-cell .now { font-weight: 600; color: #2c3e50; }
+    .price-cell .now.hit {
+      color: #1e8449;
+      text-decoration: underline;
+      text-decoration-color: #27ae60;
+    }
+    .price-cell .min { color: #888; font-size: 0.9em; }
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+    .badge.on { background: #d5f5e3; color: #1e8449; }
+    .badge.off { background: #f0f0f0; color: #777; }
+    .badge.zero { background: #d5f5e3; color: #1e8449; }
+    .badge.normal { background: #d6eaf8; color: #1a5276; }
+    .badge.both { background: #f5eef8; color: #6c3483; }
+    .badge.hit { background: #27ae60; color: #fff; }
+    #empty {
+      display: none;
+      text-align: center;
+      color: #95a5a6;
+      padding: 60px 20px;
+      font-size: 1em;
+    }
+    #empty.show { display: block; }
+    #empty code {
+      background: #e8eef3;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #2c3e50;
+    }
+
+    /* denser on wide screens */
+    @media (min-width: 1400px) {
+      #grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+      .card { padding: 8px 10px; font-size: 0.8em; }
+    }
+    @media (min-width: 1800px) {
+      #grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Carte monitorate</h1>
+    <div id="searchWrap">
+      <input type="search" id="search" placeholder="Cerca nome o Blueprint ID…" autocomplete="off" autofocus>
+      <button type="button" id="clearSearch" title="Pulisci">✕</button>
+    </div>
+    <div class="meta-bar">
+      <span id="countInfo">0 / 0</span>
+      <label>
+        Ordina
+        <select id="sort">
+          <option value="name">Nome</option>
+          <option value="id">Blueprint ID</option>
+          <option value="target">Prezzo max</option>
+          <option value="under">Sotto soglia prima</option>
+        </select>
+      </label>
+      <div id="filters">
+        <label class="filter-chip"><input type="checkbox" id="filterUnder"> Solo sotto soglia</label>
+        <label class="filter-chip"><input type="checkbox" id="filterZero" checked> Zero</label>
+        <label class="filter-chip"><input type="checkbox" id="filterNormal" checked> Normale</label>
+        <label class="filter-chip"><input type="checkbox" id="filterAuto"> Solo auto-cart</label>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="empty">Nessuna carta. Prova a modificare la ricerca.</div>
+    <div id="grid"></div>
+  </main>
+
+  <script src="watchlist.js"></script>
+</body>
+</html>

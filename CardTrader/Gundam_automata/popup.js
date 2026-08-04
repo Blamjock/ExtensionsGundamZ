@@ -10,6 +10,7 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
         return;
     }
     await chrome.storage.local.set({ token });
+    updateTokenBanner(token);
     setStatusUi(true, "Token salvato");
 });
 
@@ -51,6 +52,15 @@ document.getElementById("openDebugBtn").addEventListener("click", () => {
     });
 });
 
+document.getElementById("openWatchlistBtn").addEventListener("click", () => {
+    chrome.windows.create({
+        url: chrome.runtime.getURL("watchlist.html"),
+        type: "popup",
+        width: 1280,
+        height: 860
+    });
+});
+
 document.getElementById("runCheckBtn").addEventListener("click", async () => {
     setStatusUi(true, "Check in corso…");
     const res = await chrome.runtime.sendMessage({ type: "runCheckNow" });
@@ -79,6 +89,42 @@ document.getElementById("saveAddrBtn").addEventListener("click", async () => {
     setStatusUi(true, "Indirizzo salvato per /cart/add");
 });
 
+const VALID_TABS = ["carte", "archivio", "impostazioni"];
+
+function setActiveTab(tabId) {
+    const tab = VALID_TABS.includes(tabId) ? tabId : "carte";
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+        const active = btn.dataset.tab === tab;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    document.querySelectorAll(".tab-panel").forEach((panel) => {
+        panel.classList.toggle("active", panel.id === `panel-${tab}`);
+    });
+    return tab;
+}
+
+async function switchTab(tabId) {
+    const tab = setActiveTab(tabId);
+    await chrome.storage.local.set({ activeTab: tab });
+}
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+
+document.getElementById("goToSettingsBtn").addEventListener("click", async () => {
+    await switchTab("impostazioni");
+    const tokenDetails = document.getElementById("tokenDetails");
+    tokenDetails.open = true;
+    await chrome.storage.local.set({ tokenPanelOpen: true });
+    document.getElementById("apiToken").focus();
+});
+
+function updateTokenBanner(token) {
+    document.getElementById("tokenBanner").classList.toggle("show", !token);
+}
+
 bindCollapsiblePanels();
 
 function bindCollapsiblePanels() {
@@ -101,6 +147,7 @@ document.getElementById("fillFromPageBtn").addEventListener("click", async () =>
             return;
         }
 
+        await switchTab("carte");
         document.getElementById("addCardDetails").open = true;
         await chrome.storage.local.set({ addCardPanelOpen: true });
 
@@ -138,6 +185,10 @@ document.getElementById("addBtn").addEventListener("click", async () => {
 
     if (!token) {
         alert("Salva prima il token API.");
+        await switchTab("impostazioni");
+        document.getElementById("tokenDetails").open = true;
+        await chrome.storage.local.set({ tokenPanelOpen: true });
+        document.getElementById("apiToken").focus();
         return;
     }
     if (!Number.isFinite(bId) || bId <= 0) {
@@ -630,17 +681,22 @@ async function loadAll() {
         "defaultWatchZero",
         "defaultWatchNormal",
         "defaultAutoCart",
+        "activeTab",
+        "addCardPanelOpen",
         "tokenPanelOpen",
         "pollPanelOpen",
-        "addCardPanelOpen",
         "addrPanelOpen",
-        "archivePanelOpen",
+        "soundPanelOpen",
         "debugPanelOpen"
     ]);
 
     if (data.token) {
         document.getElementById("apiToken").value = data.token;
     }
+    updateTokenBanner(data.token || "");
+    setActiveTab(data.activeTab || "carte");
+    restoreCollapsiblePanels(data);
+
     document.getElementById("pollMinutes").value = data.pollMinutes ?? 2;
     document.getElementById("debugMode").checked = Boolean(data.debugMode);
     document.getElementById("alertSound").checked = data.alertSound !== false;
@@ -666,8 +722,6 @@ async function loadAll() {
         document.getElementById("addrState").value = data.cartAddress.state_or_province || "";
         document.getElementById("addrCountry").value = data.cartAddress.country_code || "";
     }
-
-    restoreCollapsiblePanels(data);
 
     if (!data.watchList && data.sniperList) {
         const migrated = data.sniperList.map(legacyToWatch);
@@ -741,9 +795,13 @@ function loadCartArchive() {
         document.getElementById("archiveCount").textContent = String(archive.length);
         document.getElementById("archiveQty").textContent = String(totalQty);
         document.getElementById("archiveSpend").textContent = `€${totalSpend.toFixed(2)}`;
-        const summaryMeta = document.getElementById("archiveSummaryMeta");
-        if (summaryMeta) {
-            summaryMeta.textContent = `${totalQty} pz · €${totalSpend.toFixed(2)}`;
+
+        const badge = document.getElementById("archiveTabBadge");
+        if (badge) {
+            const show = totalQty > 0;
+            badge.classList.toggle("show", show);
+            badge.textContent = show ? String(totalQty) : "0";
+            badge.title = `${archive.length} carte · €${totalSpend.toFixed(2)}`;
         }
     });
 }
@@ -821,6 +879,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (changes.watchList) loadList();
     if (changes.cartArchive) loadCartArchive();
     if (changes.priceHistory && chartState.bId) renderPriceChart();
+    if (changes.token) updateTokenBanner(changes.token.newValue || "");
     if (changes.lastStatus && changes.lastStatus.newValue) {
         const s = changes.lastStatus.newValue;
         setStatusUi(s.ok, s.message);

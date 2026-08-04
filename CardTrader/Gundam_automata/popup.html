@@ -3,42 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body { width: 380px; padding: 15px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; margin: 0; }
-    h3 { margin: 0 0 12px; color: #333; }
-    #timer-box { background: #2c3e50; color: #ecf0f1; padding: 10px; text-align: center; border-radius: 6px; margin-bottom: 10px; font-size: 1.05em; }
+    body {
+      width: 400px;
+      padding: 12px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+    }
+    h3 { margin: 0 0 8px; color: #333; font-size: 1.1em; }
+    #timer-box {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 8px 10px;
+      text-align: center;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.95em;
+    }
     #countdown { font-weight: bold; color: #3498db; }
-    #status-box { font-size: 0.78em; color: #555; margin-bottom: 12px; min-height: 1.2em; }
+    #status-box {
+      font-size: 0.78em;
+      color: #555;
+      margin-bottom: 10px;
+      min-height: 1.2em;
+    }
     #status-box.err { color: #c0392b; }
     #status-box.ok { color: #1e8449; }
+
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #ddd;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: #666;
+      font-size: 0.82em;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .tab-btn:hover { color: #2c3e50; background: #eef2f5; }
+    .tab-btn.active {
+      color: #2980b9;
+      background: transparent;
+    }
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 2px;
+      background: #2980b9;
+    }
+    .tab-badge {
+      display: none;
+      min-width: 16px;
+      padding: 0 5px;
+      border-radius: 8px;
+      background: #27ae60;
+      color: #fff;
+      font-size: 0.72em;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+    .tab-badge.show { display: inline-block; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
     .section { margin-bottom: 14px; }
-    .section-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.04em; color: #777; margin-bottom: 6px; }
-    .input-group { display: flex; flex-direction: column; gap: 8px; }
-    .row { display: flex; gap: 8px; align-items: center; }
-    .row input[type="number"] { flex: 1; }
-    .checks { display: flex; flex-wrap: wrap; gap: 10px 14px; }
-    input[type="text"], input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; width: 100%; }
-    label.check { display: flex; align-items: center; gap: 6px; font-size: 0.9em; color: #333; user-select: none; }
-    button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; }
-    #saveTokenBtn { background: #34495e; color: white; }
-    #saveTokenBtn:hover { background: #2c3e50; }
-    #addBtn { background: #27ae60; color: white; }
-    #addBtn:hover { background: #219150; }
-    #fillFromPageBtn { background: #e67e22; color: white; }
-    #fillFromPageBtn:hover { background: #d35400; }
-    #fillFromPageBtn:disabled { background: #bdc3c7; cursor: default; }
-    #savePollBtn { background: #2980b9; color: white; padding: 8px 12px; white-space: nowrap; }
-    #saveAddrBtn { background: #7f8c8d; color: white; }
+    .section-label {
+      font-size: 0.75em;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #777;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    #openWatchlistBtn {
+      background: #2980b9;
+      color: white;
+      padding: 4px 10px;
+      font-size: 0.85em;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 600;
+    }
+    #openWatchlistBtn:hover { background: #1f6dad; }
     .collapsible {
       background: #fff;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 6px;
       padding: 0;
       margin-bottom: 10px;
     }
     .collapsible summary {
       cursor: pointer;
       list-style: none;
-      padding: 8px 10px;
+      padding: 9px 10px;
       font-size: 0.82em;
       font-weight: 600;
       color: #555;
@@ -56,13 +135,88 @@
     .collapsible-body {
       padding: 10px;
     }
-    #debugPanel { display: none; gap: 8px; }
-    #debugPanel.show { display: flex; flex-direction: column; }
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row input[type="number"],
+    .row input[type="text"] { flex: 1; }
+    .checks { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+    input[type="text"], input[type="number"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    label.check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9em;
+      color: #333;
+      user-select: none;
+    }
+    button {
+      cursor: pointer;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    #saveTokenBtn { background: #34495e; color: white; }
+    #saveTokenBtn:hover { background: #2c3e50; }
+    #addBtn { background: #27ae60; color: white; }
+    #addBtn:hover { background: #219150; }
+    #fillFromPageBtn { background: #e67e22; color: white; }
+    #fillFromPageBtn:hover { background: #d35400; }
+    #fillFromPageBtn:disabled { background: #bdc3c7; cursor: default; }
+    #savePollBtn { background: #2980b9; color: white; padding: 8px 12px; white-space: nowrap; }
+    #saveAddrBtn { background: #7f8c8d; color: white; }
+    #testSoundBtn { background: #16a085; color: white; }
     #openDebugBtn { background: #8e44ad; color: white; }
     #runCheckBtn { background: #d35400; color: white; }
-    #testSoundBtn { background: #16a085; color: white; }
-    #list { border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 12px; max-height: 280px; overflow-y: auto; }
-    .card-item { background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 0.85em; border-left: 4px solid #bdc3c7; }
+
+    #tokenBanner {
+      display: none;
+      background: #fef5e7;
+      border: 1px solid #f5cba7;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      font-size: 0.82em;
+      color: #935116;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    #tokenBanner.show { display: flex; }
+    #goToSettingsBtn {
+      background: #e67e22;
+      color: white;
+      padding: 5px 10px;
+      font-size: 0.85em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #goToSettingsBtn:hover { background: #d35400; }
+
+    #debugPanel { display: none; gap: 8px; margin-top: 4px; }
+    #debugPanel.show { display: flex; flex-direction: column; }
+
+    #list {
+      max-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 4px;
+    }
+    .card-item {
+      background: white;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      font-size: 0.85em;
+      border-left: 4px solid #bdc3c7;
+    }
     .card-item.ch-both { border-left-color: #8e44ad; }
     .card-item.ch-zero { border-left-color: #27ae60; }
     .card-item.ch-normal { border-left-color: #2980b9; }
@@ -107,6 +261,7 @@
     .chart-btn svg { width: 14px; height: 14px; display: block; }
     .remove { color: #e74c3c; cursor: pointer; font-weight: bold; padding: 0 4px; flex-shrink: 0; }
     .empty { color: #999; font-size: 0.85em; text-align: center; padding: 12px 0; }
+
     #chartOverlay {
       display: none;
       position: fixed;
@@ -204,23 +359,7 @@
       padding: 40px 12px;
     }
     #chartEmpty.show { display: block; }
-    .archive-collapsible {
-      margin-top: 12px;
-      border-color: #27ae60;
-    }
-    .archive-collapsible > summary {
-      color: #1e8449;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .archive-collapsible > summary::before { color: #27ae60; }
-    .summary-meta {
-      font-weight: 600;
-      color: #2c3e50;
-      font-size: 0.95em;
-    }
+
     #cartArchiveHeader {
       display: flex;
       justify-content: flex-end;
@@ -232,7 +371,7 @@
       padding: 5px 8px;
       font-size: 0.75em;
     }
-    #cartArchiveList { max-height: 200px; overflow-y: auto; }
+    #cartArchiveList { max-height: 280px; overflow-y: auto; }
     .archive-item {
       background: #eafaf1;
       border-left: 4px solid #27ae60;
@@ -256,6 +395,13 @@
       margin-top: 6px;
     }
     #cartArchiveTotal b { color: #2ecc71; }
+
+    .hint {
+      font-size: 0.75em;
+      color: #888;
+      margin: 0 0 6px;
+      line-height: 1.35;
+    }
   </style>
 </head>
 <body>
@@ -289,89 +435,117 @@
   </div>
   <div id="status-box"></div>
 
-  <div class="section-label">Carte monitorate</div>
-  <div id="list"></div>
+  <nav class="tab-bar" role="tablist">
+    <button type="button" class="tab-btn active" role="tab" data-tab="carte" aria-selected="true">Carte</button>
+    <button type="button" class="tab-btn" role="tab" data-tab="archivio" aria-selected="false">
+      Archivio
+      <span id="archiveTabBadge" class="tab-badge">0</span>
+    </button>
+    <button type="button" class="tab-btn" role="tab" data-tab="impostazioni" aria-selected="false">Impostazioni</button>
+  </nav>
 
-  <details id="tokenDetails" class="collapsible" data-panel="tokenPanelOpen">
-    <summary>API Token</summary>
-    <div class="input-group collapsible-body">
-      <input type="text" id="apiToken" placeholder="Il tuo API Token" autocomplete="off">
-      <button type="button" id="saveTokenBtn">Salva token</button>
+  <!-- Tab: Carte -->
+  <div id="panel-carte" class="tab-panel active" role="tabpanel">
+    <div id="tokenBanner">
+      <span>Manca l’API token per monitorare i prezzi.</span>
+      <button type="button" id="goToSettingsBtn">Impostazioni</button>
     </div>
-  </details>
 
-  <details id="pollDetails" class="collapsible" data-panel="pollPanelOpen">
-    <summary>Intervallo polling (1–5 min)</summary>
-    <div class="collapsible-body">
-      <div class="row">
-        <input type="number" id="pollMinutes" min="1" max="5" step="1" value="2">
-        <button type="button" id="savePollBtn">Applica</button>
+    <div class="section">
+      <div class="section-label list-header">
+        <span>Carte monitorate</span>
+        <button type="button" id="openWatchlistBtn" title="Apri vista a tutta pagina con ricerca">Espandi</button>
       </div>
+      <div id="list"></div>
     </div>
-  </details>
 
-  <details id="addCardDetails" class="collapsible" data-panel="addCardPanelOpen">
-    <summary>Aggiungi carta</summary>
-    <div class="input-group collapsible-body">
-      <button type="button" id="fillFromPageBtn" title="Legge nome e Blueprint ID dalla scheda CardTrader aperta">Dalla pagina CT</button>
-      <input type="text" id="cardLabel" placeholder="Nome / label (opzionale)">
-      <input type="number" id="blueprintId" placeholder="Blueprint ID (es. 400910)">
-      <input type="number" id="targetPrice" step="0.01" min="0" placeholder="Prezzo Max (€) — resta di default">
-      <div class="section-label" style="margin: 2px 0 0;">Cosa controllare</div>
-      <div class="checks">
-        <label class="check"><input type="checkbox" id="watchZero" checked> CT Zero</label>
-        <label class="check"><input type="checkbox" id="watchNormal"> Normale (spedizione diretta)</label>
-      </div>
-      <label class="check"><input type="checkbox" id="autoCart" checked> Auto-cart se sotto soglia</label>
-      <details id="addrDetails" class="collapsible" data-panel="addrPanelOpen">
-        <summary>Indirizzo cart (consigliato per auto-cart)</summary>
-        <div class="input-group collapsible-body">
-          <input type="text" id="addrName" placeholder="Nome">
-          <input type="text" id="addrStreet" placeholder="Via">
-          <div class="row">
-            <input type="text" id="addrZip" placeholder="CAP">
-            <input type="text" id="addrCity" placeholder="Città">
-          </div>
-          <div class="row">
-            <input type="text" id="addrState" placeholder="Provincia (es. FI)">
-            <input type="text" id="addrCountry" placeholder="Paese (es. IT)" maxlength="2">
-          </div>
-          <button type="button" id="saveAddrBtn">Salva indirizzo</button>
+    <details id="addCardDetails" class="collapsible" data-panel="addCardPanelOpen">
+      <summary>Aggiungi carta</summary>
+      <div class="input-group collapsible-body">
+        <button type="button" id="fillFromPageBtn" title="Legge nome e Blueprint ID dalla scheda CardTrader aperta">Dalla pagina CT</button>
+        <input type="text" id="cardLabel" placeholder="Nome / label (opzionale)">
+        <input type="number" id="blueprintId" placeholder="Blueprint ID (es. 400910)">
+        <input type="number" id="targetPrice" step="0.01" min="0" placeholder="Prezzo Max (€) — resta di default">
+        <div class="section-label" style="margin: 2px 0 0;">Cosa controllare</div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="watchZero" checked> CT Zero</label>
+          <label class="check"><input type="checkbox" id="watchNormal"> Normale (spedizione diretta)</label>
         </div>
-      </details>
-      <button type="button" id="addBtn">Aggiungi alla lista</button>
-    </div>
-  </details>
+        <label class="check"><input type="checkbox" id="autoCart" checked> Auto-cart se sotto soglia</label>
+        <button type="button" id="addBtn">Aggiungi alla lista</button>
+      </div>
+    </details>
+  </div>
 
-  <details id="debugDetails" class="collapsible" data-panel="debugPanelOpen">
-    <summary>Debug</summary>
-    <div class="input-group collapsible-body">
-      <label class="check"><input type="checkbox" id="alertSound" checked> Suono all'alert</label>
-      <button type="button" id="testSoundBtn">Prova suono</button>
-      <label class="check"><input type="checkbox" id="debugMode"> Modalità debug API</label>
-      <div id="debugPanel">
-        <button type="button" id="runCheckBtn">Esegui check ora</button>
-        <button type="button" id="openDebugBtn">Apri log request/response</button>
-      </div>
+  <!-- Tab: Archivio -->
+  <div id="panel-archivio" class="tab-panel" role="tabpanel">
+    <div id="cartArchiveHeader">
+      <button type="button" id="clearArchiveBtn" title="Svuota archivio">Svuota</button>
     </div>
-  </details>
+    <div id="cartArchiveList"></div>
+    <div id="cartArchiveTotal">
+      <span><span id="archiveCount">0</span> carte · <span id="archiveQty">0</span> pezzi</span>
+      <span>Totale: <b id="archiveSpend">€0.00</b></span>
+    </div>
+  </div>
 
-  <details id="archiveDetails" class="collapsible archive-collapsible" data-panel="archivePanelOpen">
-    <summary>
-      Archivio carrello
-      <span id="archiveSummaryMeta" class="summary-meta">0 · €0.00</span>
-    </summary>
-    <div class="collapsible-body">
-      <div id="cartArchiveHeader">
-        <button type="button" id="clearArchiveBtn" title="Svuota archivio">Svuota</button>
+  <!-- Tab: Impostazioni -->
+  <div id="panel-impostazioni" class="tab-panel" role="tabpanel">
+    <details id="tokenDetails" class="collapsible" data-panel="tokenPanelOpen">
+      <summary>API Token</summary>
+      <div class="input-group collapsible-body">
+        <input type="text" id="apiToken" placeholder="Il tuo API Token" autocomplete="off">
+        <button type="button" id="saveTokenBtn">Salva token</button>
       </div>
-      <div id="cartArchiveList"></div>
-      <div id="cartArchiveTotal">
-        <span><span id="archiveCount">0</span> carte · <span id="archiveQty">0</span> pezzi</span>
-        <span>Totale: <b id="archiveSpend">€0.00</b></span>
+    </details>
+
+    <details id="pollDetails" class="collapsible" data-panel="pollPanelOpen">
+      <summary>Intervallo polling (1–5 min)</summary>
+      <div class="collapsible-body">
+        <div class="row">
+          <input type="number" id="pollMinutes" min="1" max="5" step="1" value="2">
+          <button type="button" id="savePollBtn">Applica</button>
+        </div>
       </div>
-    </div>
-  </details>
+    </details>
+
+    <details id="addrDetails" class="collapsible" data-panel="addrPanelOpen">
+      <summary>Indirizzo cart</summary>
+      <div class="input-group collapsible-body">
+        <p class="hint">Consigliato per l’auto-cart (usato in /cart/add).</p>
+        <input type="text" id="addrName" placeholder="Nome">
+        <input type="text" id="addrStreet" placeholder="Via">
+        <div class="row">
+          <input type="text" id="addrZip" placeholder="CAP">
+          <input type="text" id="addrCity" placeholder="Città">
+        </div>
+        <div class="row">
+          <input type="text" id="addrState" placeholder="Provincia (es. FI)">
+          <input type="text" id="addrCountry" placeholder="Paese (es. IT)" maxlength="2">
+        </div>
+        <button type="button" id="saveAddrBtn">Salva indirizzo</button>
+      </div>
+    </details>
+
+    <details id="soundDetails" class="collapsible" data-panel="soundPanelOpen">
+      <summary>Notifiche</summary>
+      <div class="input-group collapsible-body">
+        <label class="check"><input type="checkbox" id="alertSound" checked> Suono all'alert</label>
+        <button type="button" id="testSoundBtn">Prova suono</button>
+      </div>
+    </details>
+
+    <details id="debugDetails" class="collapsible" data-panel="debugPanelOpen">
+      <summary>Debug</summary>
+      <div class="input-group collapsible-body">
+        <label class="check"><input type="checkbox" id="debugMode"> Modalità debug API</label>
+        <div id="debugPanel">
+          <button type="button" id="runCheckBtn">Esegui check ora</button>
+          <button type="button" id="openDebugBtn">Apri log request/response</button>
+        </div>
+      </div>
+    </details>
+  </div>
 
   <script src="popup.js"></script>
 </body>
