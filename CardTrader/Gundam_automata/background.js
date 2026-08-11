@@ -1,8 +1,20 @@
 import { init as initI18n, t } from "./i18n.js";
+import {
+    ACTIONS,
+    can,
+    clampAutoCart,
+    clampChannels,
+    clampPollMinutes,
+    ensureInstallAt,
+    FREE_POLL_MINUTES,
+    loadResolvedEntitlement,
+    needsPeriodicVerify
+} from "./entitlements.js";
+import { activateLicense, clearLicense, verifyLicense } from "./licenseApi.js";
 
 const BASE_URL = "https://api.cardtrader.com/api/v2";
 const ALARM_NAME = "sniperLoop";
-const DEFAULT_POLL_MINUTES = 2;
+const DEFAULT_POLL_MINUTES = FREE_POLL_MINUTES;
 const ICON_URL = "icons/icon-128.png";
 const DEBUG_LOG_MAX = 30;
 const HISTORY_MAX_AGE_MS = 32 * 24 * 60 * 60 * 1000;
@@ -13,20 +25,25 @@ const i18nReady = initI18n().catch((err) => console.error("i18n init:", err));
 
 chrome.runtime.onInstalled.addListener(async () => {
     await i18nReady;
+    await ensureInstallAt();
     await migrateStorage();
+    await maybeVerifyLicense();
     await ensureAlarm();
     await aggiornaOrarioProssimoCheck();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
     await i18nReady;
+    await ensureInstallAt();
     await migrateStorage();
+    await maybeVerifyLicense();
     await ensureAlarm();
     await aggiornaOrarioProssimoCheck();
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.pollMinutes) {
+    if (area !== "local") return;
+    if (changes.pollMinutes || changes.entitlement || changes.devForcePro || changes.installAt) {
         ensureAlarm();
     }
 });
@@ -65,7 +82,54 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             .catch((err) => sendResponse({ ok: false, error: String(err) }));
         return true;
     }
+    if (message?.type === "getEntitlement") {
+        loadResolvedEntitlement()
+            .then((info) => sendResponse({ ok: true, ...info }))
+            .catch((err) => sendResponse({ ok: false, error: String(err) }));
+        return true;
+    }
+    if (message?.type === "activateLicense") {
+        activateLicense(message.licenseKey)
+            .then(async (result) => {
+                await ensureAlarm();
+                const info = await loadResolvedEntitlement();
+                sendResponse({ ...result, resolved: info.resolved });
+            })
+            .catch((err) => sendResponse({ ok: false, error: String(err) }));
+        return true;
+    }
+    if (message?.type === "clearLicense") {
+        clearLicense()
+            .then(async () => {
+                await ensureAlarm();
+                const info = await loadResolvedEntitlement();
+                sendResponse({ ok: true, resolved: info.resolved });
+            })
+            .catch((err) => sendResponse({ ok: false, error: String(err) }));
+        return true;
+    }
+    if (message?.type === "verifyLicense") {
+        verifyLicense()
+            .then(async (result) => {
+                await ensureAlarm();
+                const info = await loadResolvedEntitlement();
+                sendResponse({ ...result, resolved: info.resolved });
+            })
+            .catch((err) => sendResponse({ ok: false, error: String(err) }));
+        return true;
+    }
 });
+
+async function maybeVerifyLicense() {
+    try {
+        const { entitlement } = await loadResolvedEntitlement();
+        if (needsPeriodicVerify(entitlement)) {
+            await verifyLicense();
+        }
+    } catch (err) {
+        console.error("maybeVerifyLicense:", err);
+    }
+}
 
 function maskToken(token) {
     if (!token || typeof token !== "string") return "";
@@ -74,6 +138,8 @@ function maskToken(token) {
 }
 
 async function isDebugMode() {
+    const { resolved } = await loadResolvedEntitlement();
+    if (!can(ACTIONS.debug, resolved)) return false;
     const data = await chrome.storage.local.get(["debugMode"]);
     return Boolean(data.debugMode);
 }
@@ -171,10 +237,18 @@ async function migrateStorage() {
         "sniperList",
         "watchList",
         "pollMinutes",
-        "debugMode"
+        "debugMode",
+        "installAt",
+        "entitlement"
     ]);
     const updates = {};
 
+    if (data.installAt == null) {
+        updates.installAt = Date.now();
+    }
+    if (data.entitlement == null) {
+        updates.entitlement = { tier: "free", source: "free", lastVerifiedAt: Date.now() };
+    }
     if (data.pollMinutes == null) {
         updates.pollMinutes = DEFAULT_POLL_MINUTES;
     }
@@ -279,10 +353,9 @@ function cartExcludeIdsForItem(item, cartArchive) {
 }
 
 async function getPollMinutes() {
+    const { resolved } = await loadResolvedEntitlement();
     const data = await chrome.storage.local.get(["pollMinutes"]);
-    const minutes = Number(data.pollMinutes);
-    if (!Number.isFinite(minutes) || minutes < 1) return DEFAULT_POLL_MINUTES;
-    return Math.min(5, Math.max(1, Math.round(minutes)));
+    return clampPollMinutes(data.pollMinutes, resolved);
 }
 
 async function ensureAlarm() {
@@ -433,6 +506,8 @@ async function valutaCanale({ item, next, listing, channel, token }) {
 async function avviaControlloLista() {
     await i18nReady;
     await migrateStorage();
+    await maybeVerifyLicense();
+    const { resolved } = await loadResolvedEntitlement();
     const data = await chrome.storage.local.get(["token", "watchList", "cartArchive"]);
     if (!data.token) {
         await setLastStatus(false, t("bg.tokenMissing"));
@@ -443,7 +518,15 @@ async function avviaControlloLista() {
         return;
     }
 
-    const list = data.watchList.map(normalizeWatchItem);
+    const rawList = data.watchList.map(normalizeWatchItem);
+    const list = rawList.map((item) => {
+        const channels = clampChannels(item.watchZero, item.watchNormal, resolved);
+        return {
+            ...item,
+            ...channels,
+            autoCart: clampAutoCart(item.autoCart, resolved)
+        };
+    });
     const cartArchive = Array.isArray(data.cartArchive) ? data.cartArchive : [];
     let errors = 0;
     let checked = 0;
@@ -536,7 +619,14 @@ async function avviaControlloLista() {
                 if (r.alerted) alerts += 1;
             }
 
-            list[i] = next;
+            // Keep user prefs in storage; Free clamps only apply at runtime
+            const raw = rawList[i];
+            list[i] = {
+                ...next,
+                watchZero: raw.watchZero,
+                watchNormal: raw.watchNormal,
+                autoCart: raw.autoCart
+            };
         } catch (error) {
             errors += 1;
             console.error("Errore nel ciclo alert:", error);
@@ -698,6 +788,9 @@ function inviaNotifica(titolo, messaggio) {
 }
 
 async function playAlertSound(opts = {}) {
+    const { resolved } = await loadResolvedEntitlement();
+    if (!can(ACTIONS.sound, resolved)) return;
+
     const data = await chrome.storage.local.get(["alertSound"]);
     if (!opts.force && data.alertSound === false) return;
 
@@ -725,4 +818,9 @@ async function ensureOffscreenDocument() {
     });
 }
 
-i18nReady.then(() => migrateStorage()).then(() => ensureAlarm()).then(() => aggiornaOrarioProssimoCheck());
+i18nReady
+    .then(() => ensureInstallAt())
+    .then(() => migrateStorage())
+    .then(() => maybeVerifyLicense())
+    .then(() => ensureAlarm())
+    .then(() => aggiornaOrarioProssimoCheck());

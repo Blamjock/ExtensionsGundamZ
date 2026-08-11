@@ -1,8 +1,12 @@
 import { init as initI18n, t, applyDom, getLocaleBcp47, onLocaleChange } from "./i18n.js";
+import { canChartRange, loadResolvedEntitlement, ACTIONS, can } from "./entitlements.js";
+import { openCheckoutPage } from "./licenseApi.js";
 
 let allItems = [];
 let searchTimer = null;
 let chartState = { bId: null, label: "", range: "day" };
+let chartHit = null;
+let resolvedEntitlement = { tier: "free", source: "free" };
 
 const CHART_RANGES = {
     day: 24 * 60 * 60 * 1000,
@@ -23,11 +27,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     await initI18n();
     applyDom();
     document.title = t("watchlist.pageTitle");
+    const info = await loadResolvedEntitlement();
+    resolvedEntitlement = info.resolved;
+    if (!can(ACTIONS.expandWatchlist, resolvedEntitlement)) {
+        document.body.innerHTML = `
+          <main style="padding:24px;font-family:Segoe UI,sans-serif;max-width:420px;margin:40px auto;text-align:center;">
+            <h1 style="font-size:1.2em;color:#2c3e50;">${escapeHtml(t("pro.upgradeTitle"))}</h1>
+            <p style="color:#555;line-height:1.45;">${escapeHtml(t("pro.limitExpand"))}</p>
+            <button type="button" id="wlUpgradeBtn" style="margin-top:12px;padding:10px 14px;background:#2980b9;color:#fff;border:none;border-radius:4px;font-weight:600;cursor:pointer;">
+              ${escapeHtml(t("pro.openCheckout"))}
+            </button>
+          </main>`;
+        document.getElementById("wlUpgradeBtn")?.addEventListener("click", () => openCheckoutPage());
+        return;
+    }
     loadList();
     searchEl.focus();
 });
 
-onLocaleChange(() => {
+onLocaleChange(async () => {
     applyDom();
     document.title = t("watchlist.pageTitle");
     render();
@@ -103,8 +121,17 @@ document.getElementById("chartOverlay").addEventListener("click", (e) => {
     if (e.target.id === "chartOverlay") closePriceChart();
 });
 document.querySelectorAll("#chartRanges .range-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-        chartState.range = btn.dataset.range || "day";
+    btn.addEventListener("click", async () => {
+        const range = btn.dataset.range || "day";
+        const info = await loadResolvedEntitlement();
+        resolvedEntitlement = info.resolved;
+        if (!canChartRange(range, resolvedEntitlement)) {
+            if (confirm(`${t("pro.limitChart")}\n\n${t("pro.openCheckout")}?`)) {
+                openCheckoutPage();
+            }
+            return;
+        }
+        chartState.range = range;
         document.querySelectorAll("#chartRanges .range-btn").forEach((b) => {
             b.classList.toggle("active", b === btn);
         });
@@ -112,10 +139,21 @@ document.querySelectorAll("#chartRanges .range-btn").forEach((btn) => {
     });
 });
 
-chrome.storage.onChanged.addListener((changes, area) => {
+chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "local") return;
     if (changes.watchList) loadList();
     if (changes.priceHistory && chartState.bId) renderPriceChart();
+    if (changes.entitlement || changes.devForcePro || changes.installAt) {
+        const info = await loadResolvedEntitlement();
+        resolvedEntitlement = info.resolved;
+        if (chartState.bId && !canChartRange(chartState.range, resolvedEntitlement)) {
+            chartState.range = "day";
+            document.querySelectorAll("#chartRanges .range-btn").forEach((b) => {
+                b.classList.toggle("active", b.dataset.range === "day");
+            });
+            renderPriceChart();
+        }
+    }
 });
 
 async function loadList() {
@@ -352,6 +390,8 @@ async function openPriceChart(bId, label) {
 }
 
 function closePriceChart() {
+    hideChartTooltip();
+    chartHit = null;
     document.getElementById("chartOverlay").classList.remove("show");
     document.getElementById("chartOverlay").setAttribute("aria-hidden", "true");
 }
@@ -378,6 +418,8 @@ async function renderPriceChart() {
         emptyEl.classList.add("show");
         wrap.style.display = "none";
         statsEl.textContent = t("chart.noSamples");
+        hideChartTooltip();
+        chartHit = null;
         return;
     }
 
@@ -424,21 +466,21 @@ function drawPriceChart(canvas, points, range) {
     const cssH = 260;
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const pad = { top: 12, right: 10, bottom: 28, left: 42 };
     const w = cssW - pad.left - pad.right;
     const h = cssH - pad.top - pad.bottom;
-
-    ctx.clearRect(0, 0, cssW, cssH);
 
     const values = [];
     points.forEach((p) => {
         if (p.z != null && Number.isFinite(p.z)) values.push(p.z);
         if (p.n != null && Number.isFinite(p.n)) values.push(p.n);
     });
-    if (!values.length) return;
+    if (!values.length) {
+        chartHit = null;
+        hideChartTooltip();
+        return;
+    }
 
     let minY = Math.min(...values);
     let maxY = Math.max(...values);
@@ -454,6 +496,33 @@ function drawPriceChart(canvas, points, range) {
     const t0 = points[0].t;
     const t1 = points[points.length - 1].t;
     const tSpan = Math.max(1, t1 - t0);
+
+    chartHit = {
+        canvas,
+        points,
+        range,
+        pad,
+        minY,
+        maxY,
+        t0,
+        tSpan,
+        w,
+        h,
+        cssW,
+        cssH,
+        dpr,
+        hoverIndex: null
+    };
+    paintPriceChart(chartHit);
+    bindChartInteraction(canvas);
+}
+
+function paintPriceChart(hit) {
+    if (!hit) return;
+    const { canvas, points, range, pad, minY, maxY, t0, tSpan, w, h, cssW, cssH, dpr, hoverIndex } = hit;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
 
     const xAt = (t) => pad.left + ((t - t0) / tSpan) * w;
     const yAt = (v) => pad.top + ((maxY - v) / (maxY - minY)) * h;
@@ -512,6 +581,126 @@ function drawPriceChart(canvas, points, range) {
 
     drawSeries("z", "#27ae60");
     drawSeries("n", "#2980b9");
+
+    if (hoverIndex == null || !points[hoverIndex]) return;
+
+    const hp = points[hoverIndex];
+    const hx = xAt(hp.t);
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(127, 140, 141, 0.85)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(hx, pad.top);
+    ctx.lineTo(hx, pad.top + h);
+    ctx.stroke();
+    ctx.restore();
+
+    const drawHoverDot = (key, color) => {
+        if (hp[key] == null || !Number.isFinite(hp[key])) return;
+        const hy = yAt(hp[key]);
+        ctx.beginPath();
+        ctx.fillStyle = "#fff";
+        ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(hx, hy, 3, 0, Math.PI * 2);
+        ctx.fill();
+    };
+    drawHoverDot("z", "#27ae60");
+    drawHoverDot("n", "#2980b9");
+}
+
+function bindChartInteraction(canvas) {
+    if (canvas.dataset.chartBound === "1") return;
+    canvas.dataset.chartBound = "1";
+
+    canvas.addEventListener("mousemove", (e) => {
+        if (!chartHit || chartHit.canvas !== canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const { pad, w, h, points, t0, tSpan } = chartHit;
+
+        if (mx < pad.left || mx > pad.left + w || my < pad.top || my > pad.top + h) {
+            if (chartHit.hoverIndex != null) {
+                chartHit.hoverIndex = null;
+                paintPriceChart(chartHit);
+            }
+            hideChartTooltip();
+            return;
+        }
+
+        const xAt = (t) => pad.left + ((t - t0) / tSpan) * w;
+        let best = 0;
+        let bestDist = Infinity;
+        for (let i = 0; i < points.length; i++) {
+            const dist = Math.abs(xAt(points[i].t) - mx);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+        }
+
+        if (chartHit.hoverIndex !== best) {
+            chartHit.hoverIndex = best;
+            paintPriceChart(chartHit);
+        }
+        const wrap = document.getElementById("chartCanvasWrap");
+        const wrapRect = wrap.getBoundingClientRect();
+        showChartTooltip(
+            points[best],
+            e.clientX - wrapRect.left,
+            e.clientY - wrapRect.top,
+            wrap.clientWidth
+        );
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+        if (!chartHit || chartHit.canvas !== canvas) return;
+        chartHit.hoverIndex = null;
+        paintPriceChart(chartHit);
+        hideChartTooltip();
+    });
+}
+
+function showChartTooltip(point, mx, my, wrapWidth) {
+    const tip = document.getElementById("chartTooltip");
+    if (!tip || !point) return;
+
+    const rows = [`<div class="time">${escapeHtml(formatCheckTime(point.t))}</div>`];
+    rows.push(
+        `<div class="row-z">${escapeHtml(t("channel.ctZero"))}: ${escapeHtml(formatEuro(point.z))}</div>`
+    );
+    rows.push(
+        `<div class="row-n">${escapeHtml(t("channel.normal"))}: ${escapeHtml(formatEuro(point.n))}</div>`
+    );
+    tip.innerHTML = rows.join("");
+    tip.classList.add("show");
+    tip.setAttribute("aria-hidden", "false");
+
+    const offset = 14;
+    tip.style.left = "0px";
+    tip.style.top = "0px";
+    const tipW = tip.offsetWidth || 120;
+    const tipH = tip.offsetHeight || 48;
+    let left = mx + offset;
+    let top = my - tipH - 8;
+    if (left + tipW > wrapWidth - 4) left = mx - tipW - offset;
+    if (left < 4) left = 4;
+    if (top < 4) top = my + offset;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+}
+
+function hideChartTooltip() {
+    const tip = document.getElementById("chartTooltip");
+    if (!tip) return;
+    tip.classList.remove("show");
+    tip.setAttribute("aria-hidden", "true");
+    tip.innerHTML = "";
 }
 
 function formatChartTick(ts, range) {

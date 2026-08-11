@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "CardTrader Price Alert",
-  "version": "2.3",
-  "description": "Alert Zero/Normale con campanella; min/now; auto-cart; archivio; debug.",
+  "name": "Crometium TCG",
+  "version": "0.8",
+  "description": "Monitor prezzi CardTrader (Zero/Normale): alert, grafici, auto-cart. Multilingua IT/EN/ES.",
   "permissions": ["storage", "alarms", "notifications", "offscreen", "activeTab", "scripting"],
   "host_permissions": [
     "https://api.cardtrader.com/*",
@@ -20,6 +20,7 @@
   },
   "action": {
     "default_popup": "popup.html",
+    "default_title": "Crometium TCG",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",

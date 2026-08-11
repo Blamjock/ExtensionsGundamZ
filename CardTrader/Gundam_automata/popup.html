@@ -97,6 +97,12 @@
       justify-content: space-between;
       gap: 8px;
     }
+    .list-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
     #openWatchlistBtn {
       background: #2980b9;
       color: white;
@@ -107,6 +113,10 @@
       font-weight: 600;
     }
     #openWatchlistBtn:hover { background: #1f6dad; }
+    #openWatchlistBtn.pro-lock { opacity: 0.7; }
+    .list-header-actions .pro-lock-tag {
+      margin-left: 0;
+    }
     .collapsible {
       background: #fff;
       border: 1px solid #ddd;
@@ -370,6 +380,7 @@
     #chartLegend .dot.zero { background: #27ae60; }
     #chartLegend .dot.normal { background: #2980b9; }
     #chartCanvasWrap {
+      position: relative;
       padding: 0 8px 10px;
       flex: 1;
       min-height: 180px;
@@ -378,7 +389,27 @@
       width: 100%;
       height: 180px;
       display: block;
+      cursor: crosshair;
     }
+    #chartTooltip {
+      display: none;
+      position: absolute;
+      pointer-events: none;
+      z-index: 2;
+      max-width: calc(100% - 12px);
+      background: rgba(44, 62, 80, 0.94);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      line-height: 1.35;
+      white-space: nowrap;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    #chartTooltip.show { display: block; }
+    #chartTooltip .time { color: #bdc3c7; margin-bottom: 2px; }
+    #chartTooltip .row-z { color: #2ecc71; }
+    #chartTooltip .row-n { color: #5dade2; }
     #chartEmpty {
       display: none;
       text-align: center;
@@ -485,10 +516,97 @@
       font-size: 0.9em;
       background: #fff;
     }
+
+    #titleRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    #titleRow h3 { margin: 0; flex: 1; }
+    #planBadge {
+      flex-shrink: 0;
+      font-size: 0.72em;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #ecf0f1;
+      color: #34495e;
+    }
+    #planBadge.pro { background: #27ae60; color: #fff; }
+    #planBadge.trial { background: #f39c12; color: #fff; }
+    #planBadge.grace { background: #8e44ad; color: #fff; }
+    #planMeta {
+      font-size: 0.78em;
+      color: #7f8c8d;
+      margin: -4px 0 8px;
+    }
+    .pro-lock { opacity: 0.55; }
+    .pro-lock-tag {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 0.7em;
+      font-weight: 700;
+      color: #f39c12;
+      vertical-align: middle;
+    }
+    #upgradeOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(44, 62, 80, 0.55);
+      z-index: 60;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    #upgradeOverlay.show { display: flex; }
+    #upgradeModal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 14px 16px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    #upgradeModal h4 { margin: 0 0 6px; color: #2c3e50; }
+    #upgradeModal p { margin: 0 0 12px; font-size: 0.88em; color: #555; line-height: 1.4; }
+    #upgradeModal .actions { display: flex; gap: 8px; }
+    #upgradeModal .actions button { flex: 1; }
+    #proLicenseDetails .row { display: flex; gap: 6px; }
+    #proLicenseDetails .row input { flex: 1; }
+    #licenseMsg {
+      font-size: 0.82em;
+      margin: 6px 0 0;
+      min-height: 1.2em;
+      line-height: 1.35;
+    }
+    #licenseMsg.ok { color: #1e8449; }
+    #licenseMsg.err { color: #c0392b; }
+    .range-btn.pro-locked { position: relative; }
   </style>
 </head>
 <body>
-  <h3 data-i18n="app.title">Price Alert</h3>
+  <div id="titleRow">
+    <h3 data-i18n="app.title">Crometium TCG</h3>
+    <span id="planBadge">Free</span>
+  </div>
+  <div id="planMeta"></div>
+
+  <div id="upgradeOverlay" aria-hidden="true">
+    <div id="upgradeModal">
+      <h4 id="upgradeTitle" data-i18n="pro.upgradeTitle">Funzione Pro</h4>
+      <p id="upgradeBody" data-i18n="pro.upgradeBody">Questa funzione è inclusa in Crometium TCG Pro.</p>
+      <div class="actions">
+        <button type="button" id="upgradeCheckoutBtn" data-i18n="pro.upgradeCta">Vedi Pro</button>
+        <button type="button" id="upgradeCloseBtn" data-i18n="chart.close">Chiudi</button>
+      </div>
+    </div>
+  </div>
 
   <div id="chartOverlay" aria-hidden="true">
     <div id="chartPanel">
@@ -509,6 +627,7 @@
       <div id="chartEmpty" data-i18n="chart.empty">Nessun dato ancora. Aspetta i prossimi check.</div>
       <div id="chartCanvasWrap">
         <canvas id="chartCanvas" width="340" height="180"></canvas>
+        <div id="chartTooltip" aria-hidden="true"></div>
       </div>
     </div>
   </div>
@@ -537,7 +656,10 @@
     <div class="section">
       <div class="section-label list-header">
         <span data-i18n="list.monitored">Carte monitorate</span>
-        <button type="button" id="openWatchlistBtn" data-i18n="list.expand" data-i18n-title="list.expandTitle" title="Apri vista a tutta pagina con ricerca">Espandi</button>
+        <div class="list-header-actions">
+          <span class="pro-lock-tag" id="expandProTag" hidden>PRO</span>
+          <button type="button" id="openWatchlistBtn" data-i18n="list.expand" data-i18n-title="list.expandTitle" title="Apri vista a tutta pagina con ricerca">Espandi</button>
+        </div>
       </div>
       <div id="list"></div>
     </div>
@@ -554,7 +676,7 @@
           <label class="check"><input type="checkbox" id="watchZero" checked> <span data-i18n="add.watchZero">CT Zero</span></label>
           <label class="check"><input type="checkbox" id="watchNormal"> <span data-i18n="add.watchNormal">Normale (spedizione diretta)</span></label>
         </div>
-        <label class="check"><input type="checkbox" id="autoCart" checked> <span data-i18n="add.autoCart">Auto-cart se sotto soglia</span></label>
+        <label class="check" id="autoCartLabel"><input type="checkbox" id="autoCart" checked> <span data-i18n="add.autoCart">Auto-cart se sotto soglia</span><span class="pro-lock-tag" id="autoCartProTag" hidden>PRO</span></label>
         <button type="button" id="addBtn" data-i18n="add.submit">Aggiungi alla lista</button>
       </div>
     </details>
@@ -592,7 +714,7 @@
     </details>
 
     <details id="pollDetails" class="collapsible" data-panel="pollPanelOpen">
-      <summary data-i18n="settings.pollInterval">Intervallo polling (1–5 min)</summary>
+      <summary><span data-i18n="settings.pollInterval">Intervallo polling (1–5 min)</span> <span class="pro-lock-tag" id="pollProTag" hidden>PRO</span></summary>
       <div class="collapsible-body">
         <div class="row">
           <input type="number" id="pollMinutes" min="1" max="5" step="1" value="2">
@@ -622,13 +744,27 @@
     <details id="soundDetails" class="collapsible" data-panel="soundPanelOpen">
       <summary data-i18n="settings.notifications">Notifiche</summary>
       <div class="input-group collapsible-body">
-        <label class="check"><input type="checkbox" id="alertSound" checked> <span data-i18n="settings.alertSound">Suono all'alert</span></label>
+        <label class="check" id="alertSoundLabel"><input type="checkbox" id="alertSound" checked> <span data-i18n="settings.alertSound">Suono all'alert</span><span class="pro-lock-tag" id="soundProTag" hidden>PRO</span></label>
         <button type="button" id="testSoundBtn" data-i18n="settings.testSound">Prova suono</button>
       </div>
     </details>
 
+    <details id="proLicenseDetails" class="collapsible" data-panel="proPanelOpen">
+      <summary data-i18n="pro.activateTitle">Attiva licenza Pro</summary>
+      <div class="input-group collapsible-body">
+        <p class="hint" data-i18n="pro.featuresHint">Pro: carte illimitate, Zero+Normale, poll 1–5′, auto-cart, suono, grafici lunghi, Espandi, debug.</p>
+        <div class="row">
+          <input type="text" id="licenseKeyInput" data-i18n-placeholder="pro.licensePlaceholder" placeholder="License key (es. PRO-DEV-…)" autocomplete="off">
+          <button type="button" id="activateLicenseBtn" data-i18n="pro.activate">Attiva</button>
+        </div>
+        <div id="licenseMsg" role="status" aria-live="polite"></div>
+        <button type="button" id="openCheckoutBtn" data-i18n="pro.openCheckout">Apri pagina prezzi</button>
+        <button type="button" id="clearLicenseBtn" data-i18n="pro.clearLicense">Rimuovi licenza</button>
+      </div>
+    </details>
+
     <details id="debugDetails" class="collapsible" data-panel="debugPanelOpen">
-      <summary data-i18n="settings.debug">Debug</summary>
+      <summary><span data-i18n="settings.debug">Debug</span> <span class="pro-lock-tag" id="debugProTag" hidden>PRO</span></summary>
       <div class="input-group collapsible-body">
         <label class="check"><input type="checkbox" id="debugMode"> <span data-i18n="settings.debugMode">Modalità debug API</span></label>
         <div id="debugPanel">

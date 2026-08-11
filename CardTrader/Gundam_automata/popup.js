@@ -1,18 +1,35 @@
 import { init as initI18n, t, applyDom, setLocale, getLocale, getLocaleBcp47, onLocaleChange } from "./i18n.js";
+import {
+    ACTIONS,
+    FREE_POLL_MINUTES,
+    can,
+    canChartRange,
+    clampAutoCart,
+    clampChannels,
+    clampPollMinutes,
+    isPro,
+    loadResolvedEntitlement,
+    maxCardsFor
+} from "./entitlements.js";
+import { openCheckoutPage } from "./licenseApi.js";
+
+let entitlementState = { resolved: { tier: "free", source: "free" } };
 
 document.addEventListener("DOMContentLoaded", async () => {
     await initI18n();
     applyDom();
     const localeSelect = document.getElementById("localeSelect");
     if (localeSelect) localeSelect.value = getLocale();
+    await refreshEntitlementUi();
     loadAll();
     avviaVisualizzazioneTimer();
 });
 
-onLocaleChange(() => {
+onLocaleChange(async () => {
     applyDom();
     const localeSelect = document.getElementById("localeSelect");
     if (localeSelect) localeSelect.value = getLocale();
+    await refreshEntitlementUi();
     loadList();
     loadCartArchive();
     if (chartState.bId) {
@@ -39,11 +56,19 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("savePollBtn").addEventListener("click", async () => {
+    await refreshEntitlementUi();
+    if (!can(ACTIONS.pollFast, entitlementState.resolved)) {
+        showUpgradeModal(t("pro.limitPoll", { min: FREE_POLL_MINUTES }));
+        document.getElementById("pollMinutes").value = String(FREE_POLL_MINUTES);
+        await chrome.storage.local.set({ pollMinutes: FREE_POLL_MINUTES });
+        return;
+    }
     let minutes = parseInt(document.getElementById("pollMinutes").value, 10);
     if (!Number.isFinite(minutes) || minutes < 1 || minutes > 5) {
         alert(t("alert.pollRange"));
         return;
     }
+    minutes = clampPollMinutes(minutes, entitlementState.resolved);
     await chrome.storage.local.set({ pollMinutes: minutes });
     const prossimo = Date.now() + minutes * 60 * 1000;
     await chrome.storage.local.set({ nextTick: prossimo });
@@ -51,6 +76,12 @@ document.getElementById("savePollBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("debugMode").addEventListener("change", async (e) => {
+    await refreshEntitlementUi();
+    if (e.target.checked && !can(ACTIONS.debug, entitlementState.resolved)) {
+        e.target.checked = false;
+        showUpgradeModal(t("pro.limitDebug"));
+        return;
+    }
     const enabled = e.target.checked;
     await chrome.storage.local.set({ debugMode: enabled });
     updateDebugPanel(enabled);
@@ -58,16 +89,32 @@ document.getElementById("debugMode").addEventListener("change", async (e) => {
 });
 
 document.getElementById("alertSound").addEventListener("change", async (e) => {
+    await refreshEntitlementUi();
+    if (e.target.checked && !can(ACTIONS.sound, entitlementState.resolved)) {
+        e.target.checked = false;
+        showUpgradeModal(t("pro.limitSound"));
+        return;
+    }
     const enabled = e.target.checked;
     await chrome.storage.local.set({ alertSound: enabled });
     setStatusUi(true, enabled ? t("status.soundOn") : t("status.soundOff"));
 });
 
 document.getElementById("testSoundBtn").addEventListener("click", async () => {
+    await refreshEntitlementUi();
+    if (!can(ACTIONS.sound, entitlementState.resolved)) {
+        showUpgradeModal(t("pro.limitSound"));
+        return;
+    }
     await chrome.runtime.sendMessage({ type: "testAlertSound" });
 });
 
-document.getElementById("openDebugBtn").addEventListener("click", () => {
+document.getElementById("openDebugBtn").addEventListener("click", async () => {
+    await refreshEntitlementUi();
+    if (!can(ACTIONS.debug, entitlementState.resolved)) {
+        showUpgradeModal(t("pro.limitDebug"));
+        return;
+    }
     chrome.windows.create({
         url: chrome.runtime.getURL("debug.html"),
         type: "popup",
@@ -76,7 +123,88 @@ document.getElementById("openDebugBtn").addEventListener("click", () => {
     });
 });
 
-document.getElementById("openWatchlistBtn").addEventListener("click", () => {
+document.getElementById("upgradeCloseBtn").addEventListener("click", hideUpgradeModal);
+document.getElementById("upgradeOverlay").addEventListener("click", (e) => {
+    if (e.target.id === "upgradeOverlay") hideUpgradeModal();
+});
+document.getElementById("upgradeCheckoutBtn").addEventListener("click", () => {
+    openCheckoutPage();
+});
+document.getElementById("openCheckoutBtn").addEventListener("click", () => {
+    openCheckoutPage();
+});
+document.getElementById("activateLicenseBtn").addEventListener("click", async () => {
+    const input = document.getElementById("licenseKeyInput");
+    const key = input.value.trim();
+    if (!key) {
+        setLicenseMsg(false, t("pro.emptyKey"));
+        setStatusUi(false, t("pro.emptyKey"));
+        return;
+    }
+    const btn = document.getElementById("activateLicenseBtn");
+    btn.disabled = true;
+    try {
+        const res = await chrome.runtime.sendMessage({ type: "activateLicense", licenseKey: key });
+        if (res?.ok) {
+            const msg = t("pro.activated");
+            setLicenseMsg(true, msg);
+            setStatusUi(true, msg);
+            input.value = "";
+            await refreshEntitlementUi();
+            loadAll();
+        } else {
+            const msg = licenseErrorMessage(res?.error);
+            setLicenseMsg(false, msg);
+            setStatusUi(false, msg);
+        }
+    } catch (err) {
+        const msg = t("pro.networkError");
+        setLicenseMsg(false, msg);
+        setStatusUi(false, msg);
+    } finally {
+        btn.disabled = false;
+    }
+});
+document.getElementById("clearLicenseBtn").addEventListener("click", async () => {
+    await chrome.runtime.sendMessage({ type: "clearLicense" });
+    const msg = t("pro.cleared");
+    setLicenseMsg(true, msg);
+    setStatusUi(true, msg);
+    await refreshEntitlementUi();
+    loadAll();
+});
+document.getElementById("licenseKeyInput").addEventListener("input", () => {
+    setLicenseMsg(null, "");
+});
+
+document.getElementById("autoCart").addEventListener("change", async (e) => {
+    await refreshEntitlementUi();
+    if (e.target.checked && !can(ACTIONS.autoCart, entitlementState.resolved)) {
+        e.target.checked = false;
+        showUpgradeModal(t("pro.limitAutoCart"));
+    }
+});
+
+document.getElementById("watchZero").addEventListener("change", () => onChannelToggle("zero"));
+document.getElementById("watchNormal").addEventListener("change", () => onChannelToggle("normal"));
+
+async function onChannelToggle(which) {
+    await refreshEntitlementUi();
+    const zEl = document.getElementById("watchZero");
+    const nEl = document.getElementById("watchNormal");
+    if (zEl.checked && nEl.checked && !can(ACTIONS.dualChannel, entitlementState.resolved)) {
+        if (which === "zero") nEl.checked = false;
+        else zEl.checked = false;
+        showUpgradeModal(t("pro.limitDual"));
+    }
+}
+
+document.getElementById("openWatchlistBtn").addEventListener("click", async () => {
+    await refreshEntitlementUi();
+    if (!can(ACTIONS.expandWatchlist, entitlementState.resolved)) {
+        showUpgradeModal(t("pro.limitExpand"));
+        return;
+    }
     chrome.windows.create({
         url: chrome.runtime.getURL("watchlist.html"),
         type: "popup",
@@ -199,13 +327,14 @@ document.getElementById("fillFromPageBtn").addEventListener("click", async () =>
 });
 
 document.getElementById("addBtn").addEventListener("click", async () => {
+    await refreshEntitlementUi();
     const token = document.getElementById("apiToken").value.trim();
     const bId = parseInt(document.getElementById("blueprintId").value, 10);
     const price = parseFloat(document.getElementById("targetPrice").value);
     const label = document.getElementById("cardLabel").value.trim();
-    const autoCart = document.getElementById("autoCart").checked;
-    const watchZero = document.getElementById("watchZero").checked;
-    const watchNormal = document.getElementById("watchNormal").checked;
+    let autoCart = document.getElementById("autoCart").checked;
+    let watchZero = document.getElementById("watchZero").checked;
+    let watchNormal = document.getElementById("watchNormal").checked;
 
     if (!token) {
         alert(t("alert.saveTokenFirst"));
@@ -228,10 +357,32 @@ document.getElementById("addBtn").addEventListener("click", async () => {
         return;
     }
 
+    const channels = clampChannels(watchZero, watchNormal, entitlementState.resolved);
+    watchZero = channels.watchZero;
+    watchNormal = channels.watchNormal;
+    if (
+        document.getElementById("watchZero").checked &&
+        document.getElementById("watchNormal").checked &&
+        !can(ACTIONS.dualChannel, entitlementState.resolved)
+    ) {
+        showUpgradeModal(t("pro.limitDual"));
+        document.getElementById("watchZero").checked = watchZero;
+        document.getElementById("watchNormal").checked = watchNormal;
+        return;
+    }
+
+    autoCart = clampAutoCart(autoCart, entitlementState.resolved);
+    document.getElementById("autoCart").checked = autoCart;
+
     const data = await chrome.storage.local.get(["watchList", "sniperList"]);
     let list = (data.watchList || (data.sniperList || []).map(legacyToWatch)).map(normalizeItem);
 
     const existing = list.findIndex((x) => x.bId === bId);
+    if (existing < 0 && !can(ACTIONS.addCard, entitlementState.resolved, { watchListLength: list.length })) {
+        showUpgradeModal(t("pro.limitCards", { max: maxCardsFor(entitlementState.resolved) }));
+        return;
+    }
+
     const prev = existing >= 0 ? list[existing] : null;
     const entry = {
         bId,
@@ -414,14 +565,21 @@ const CHART_RANGES = {
 };
 
 let chartState = { bId: null, label: "", range: "day" };
+let chartHit = null;
 
 document.getElementById("chartClose").addEventListener("click", closePriceChart);
 document.getElementById("chartOverlay").addEventListener("click", (e) => {
     if (e.target.id === "chartOverlay") closePriceChart();
 });
 document.querySelectorAll("#chartRanges .range-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-        chartState.range = btn.dataset.range || "day";
+    btn.addEventListener("click", async () => {
+        const range = btn.dataset.range || "day";
+        await refreshEntitlementUi();
+        if (!canChartRange(range, entitlementState.resolved)) {
+            showUpgradeModal(t("pro.limitChart"));
+            return;
+        }
+        chartState.range = range;
         document.querySelectorAll("#chartRanges .range-btn").forEach((b) => {
             b.classList.toggle("active", b === btn);
         });
@@ -442,6 +600,8 @@ async function openPriceChart(bId, label) {
 }
 
 function closePriceChart() {
+    hideChartTooltip();
+    chartHit = null;
     document.getElementById("chartOverlay").classList.remove("show");
     document.getElementById("chartOverlay").setAttribute("aria-hidden", "true");
 }
@@ -468,6 +628,8 @@ async function renderPriceChart() {
         empty.classList.add("show");
         wrap.style.display = "none";
         statsEl.textContent = t("chart.noSamples");
+        hideChartTooltip();
+        chartHit = null;
         return;
     }
 
@@ -514,21 +676,21 @@ function drawPriceChart(canvas, points, range) {
     const cssH = 180;
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
-    const ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const pad = { top: 12, right: 10, bottom: 28, left: 38 };
     const w = cssW - pad.left - pad.right;
     const h = cssH - pad.top - pad.bottom;
-
-    ctx.clearRect(0, 0, cssW, cssH);
 
     const values = [];
     points.forEach((p) => {
         if (p.z != null && Number.isFinite(p.z)) values.push(p.z);
         if (p.n != null && Number.isFinite(p.n)) values.push(p.n);
     });
-    if (!values.length) return;
+    if (!values.length) {
+        chartHit = null;
+        hideChartTooltip();
+        return;
+    }
 
     let minY = Math.min(...values);
     let maxY = Math.max(...values);
@@ -545,10 +707,36 @@ function drawPriceChart(canvas, points, range) {
     const t1 = points[points.length - 1].t;
     const tSpan = Math.max(1, t1 - t0);
 
+    chartHit = {
+        canvas,
+        points,
+        range,
+        pad,
+        minY,
+        maxY,
+        t0,
+        tSpan,
+        w,
+        h,
+        cssW,
+        cssH,
+        dpr,
+        hoverIndex: null
+    };
+    paintPriceChart(chartHit);
+    bindChartInteraction(canvas);
+}
+
+function paintPriceChart(hit) {
+    if (!hit) return;
+    const { canvas, points, range, pad, minY, maxY, t0, tSpan, w, h, cssW, cssH, dpr, hoverIndex } = hit;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
     const xAt = (t) => pad.left + ((t - t0) / tSpan) * w;
     const yAt = (v) => pad.top + ((maxY - v) / (maxY - minY)) * h;
 
-    // grid
     ctx.strokeStyle = "#ecf0f1";
     ctx.lineWidth = 1;
     ctx.fillStyle = "#95a5a6";
@@ -565,10 +753,9 @@ function drawPriceChart(canvas, points, range) {
         ctx.fillText(`€${v.toFixed(2)}`, pad.left - 4, y);
     }
 
-    // x labels
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    const labelCount = range === "day" ? 4 : range === "week" ? 5 : 5;
+    const labelCount = range === "day" ? 4 : 5;
     for (let i = 0; i <= labelCount; i++) {
         const t = t0 + (tSpan * i) / labelCount;
         const x = xAt(t);
@@ -605,7 +792,125 @@ function drawPriceChart(canvas, points, range) {
     drawSeries("z", "#27ae60");
     drawSeries("n", "#2980b9");
 
-    // target? skip - keep chart clean
+    if (hoverIndex == null || !points[hoverIndex]) return;
+
+    const hp = points[hoverIndex];
+    const hx = xAt(hp.t);
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(127, 140, 141, 0.85)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(hx, pad.top);
+    ctx.lineTo(hx, pad.top + h);
+    ctx.stroke();
+    ctx.restore();
+
+    const drawHoverDot = (key, color) => {
+        if (hp[key] == null || !Number.isFinite(hp[key])) return;
+        const hy = yAt(hp[key]);
+        ctx.beginPath();
+        ctx.fillStyle = "#fff";
+        ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(hx, hy, 3, 0, Math.PI * 2);
+        ctx.fill();
+    };
+    drawHoverDot("z", "#27ae60");
+    drawHoverDot("n", "#2980b9");
+}
+
+function bindChartInteraction(canvas) {
+    if (canvas.dataset.chartBound === "1") return;
+    canvas.dataset.chartBound = "1";
+
+    canvas.addEventListener("mousemove", (e) => {
+        if (!chartHit || chartHit.canvas !== canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const { pad, w, h, points, t0, tSpan } = chartHit;
+
+        if (mx < pad.left || mx > pad.left + w || my < pad.top || my > pad.top + h) {
+            if (chartHit.hoverIndex != null) {
+                chartHit.hoverIndex = null;
+                paintPriceChart(chartHit);
+            }
+            hideChartTooltip();
+            return;
+        }
+
+        const xAt = (t) => pad.left + ((t - t0) / tSpan) * w;
+        let best = 0;
+        let bestDist = Infinity;
+        for (let i = 0; i < points.length; i++) {
+            const dist = Math.abs(xAt(points[i].t) - mx);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+        }
+
+        if (chartHit.hoverIndex !== best) {
+            chartHit.hoverIndex = best;
+            paintPriceChart(chartHit);
+        }
+        const wrap = document.getElementById("chartCanvasWrap");
+        const wrapRect = wrap.getBoundingClientRect();
+        showChartTooltip(
+            points[best],
+            e.clientX - wrapRect.left,
+            e.clientY - wrapRect.top,
+            wrap.clientWidth
+        );
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+        if (!chartHit || chartHit.canvas !== canvas) return;
+        chartHit.hoverIndex = null;
+        paintPriceChart(chartHit);
+        hideChartTooltip();
+    });
+}
+
+function showChartTooltip(point, mx, my, wrapWidth) {
+    const tip = document.getElementById("chartTooltip");
+    if (!tip || !point) return;
+
+    const rows = [`<div class="time">${escapeHtml(formatCheckTime(point.t))}</div>`];
+    rows.push(
+        `<div class="row-z">${escapeHtml(t("channel.ctZero"))}: ${escapeHtml(formatEuro(point.z))}</div>`
+    );
+    rows.push(
+        `<div class="row-n">${escapeHtml(t("channel.normal"))}: ${escapeHtml(formatEuro(point.n))}</div>`
+    );
+    tip.innerHTML = rows.join("");
+    tip.classList.add("show");
+    tip.setAttribute("aria-hidden", "false");
+
+    const offset = 12;
+    tip.style.left = "0px";
+    tip.style.top = "0px";
+    const tipW = tip.offsetWidth || 110;
+    const tipH = tip.offsetHeight || 44;
+    let left = mx + offset;
+    let top = my - tipH - 6;
+    if (left + tipW > wrapWidth - 4) left = mx - tipW - offset;
+    if (left < 4) left = 4;
+    if (top < 4) top = my + offset;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+}
+
+function hideChartTooltip() {
+    const tip = document.getElementById("chartTooltip");
+    if (!tip) return;
+    tip.classList.remove("show");
+    tip.setAttribute("aria-hidden", "true");
+    tip.innerHTML = "";
 }
 
 function formatChartTick(ts, range) {
@@ -747,6 +1052,7 @@ function trendIcon(nowValue, minValue) {
 }
 
 async function loadAll() {
+    await refreshEntitlementUi();
     const data = await chrome.storage.local.get([
         "token",
         "watchList",
@@ -766,7 +1072,9 @@ async function loadAll() {
         "pollPanelOpen",
         "addrPanelOpen",
         "soundPanelOpen",
-        "debugPanelOpen"
+        "debugPanelOpen",
+        "proPanelOpen",
+        "licenseKey"
     ]);
 
     if (data.token) {
@@ -776,22 +1084,42 @@ async function loadAll() {
     setActiveTab(data.activeTab || "carte");
     restoreCollapsiblePanels(data);
 
-    document.getElementById("pollMinutes").value = data.pollMinutes ?? 2;
-    document.getElementById("debugMode").checked = Boolean(data.debugMode);
-    document.getElementById("alertSound").checked = data.alertSound !== false;
-    updateDebugPanel(Boolean(data.debugMode));
+    const poll = clampPollMinutes(data.pollMinutes ?? FREE_POLL_MINUTES, entitlementState.resolved);
+    document.getElementById("pollMinutes").value = poll;
+    if (!can(ACTIONS.pollFast, entitlementState.resolved) && data.pollMinutes !== FREE_POLL_MINUTES) {
+        await chrome.storage.local.set({ pollMinutes: FREE_POLL_MINUTES });
+    }
+
+    const debugOk = can(ACTIONS.debug, entitlementState.resolved);
+    document.getElementById("debugMode").checked = debugOk && Boolean(data.debugMode);
+    if (!debugOk && data.debugMode) {
+        await chrome.storage.local.set({ debugMode: false });
+    }
+    updateDebugPanel(document.getElementById("debugMode").checked);
+
+    const soundOk = can(ACTIONS.sound, entitlementState.resolved);
+    document.getElementById("alertSound").checked = soundOk && data.alertSound !== false;
+    if (!soundOk) {
+        document.getElementById("alertSound").checked = false;
+    }
 
     if (data.defaultTargetPrice != null && Number(data.defaultTargetPrice) > 0) {
         document.getElementById("targetPrice").value = String(data.defaultTargetPrice);
     }
 
-    // Defaults: Zero on, Normale off, auto-cart on — overridden by last used settings
-    document.getElementById("watchZero").checked =
-        data.defaultWatchZero !== undefined ? Boolean(data.defaultWatchZero) : true;
-    document.getElementById("watchNormal").checked =
-        data.defaultWatchNormal !== undefined ? Boolean(data.defaultWatchNormal) : false;
-    document.getElementById("autoCart").checked =
-        data.defaultAutoCart !== undefined ? Boolean(data.defaultAutoCart) : true;
+    let watchZero = data.defaultWatchZero !== undefined ? Boolean(data.defaultWatchZero) : true;
+    let watchNormal = data.defaultWatchNormal !== undefined ? Boolean(data.defaultWatchNormal) : false;
+    const ch = clampChannels(watchZero, watchNormal, entitlementState.resolved);
+    document.getElementById("watchZero").checked = ch.watchZero;
+    document.getElementById("watchNormal").checked = ch.watchNormal;
+
+    let autoCart = data.defaultAutoCart !== undefined ? Boolean(data.defaultAutoCart) : true;
+    autoCart = clampAutoCart(autoCart, entitlementState.resolved);
+    document.getElementById("autoCart").checked = autoCart;
+
+    if (data.licenseKey) {
+        document.getElementById("licenseKeyInput").placeholder = data.licenseKey;
+    }
 
     if (data.cartAddress) {
         document.getElementById("addrName").value = data.cartAddress.name || "";
@@ -962,6 +1290,118 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;");
 }
 
+async function refreshEntitlementUi() {
+    try {
+        const res = await chrome.runtime.sendMessage({ type: "getEntitlement" });
+        if (res?.ok) {
+            entitlementState = res;
+        } else {
+            entitlementState = await loadResolvedEntitlement();
+        }
+    } catch {
+        entitlementState = await loadResolvedEntitlement();
+    }
+
+    const resolved = entitlementState.resolved || { tier: "free", source: "free" };
+    const badge = document.getElementById("planBadge");
+    const meta = document.getElementById("planMeta");
+    if (badge) {
+        badge.classList.remove("pro", "trial", "grace");
+        if (resolved.source === "trial") {
+            badge.textContent = t("pro.badgeTrial");
+            badge.classList.add("trial");
+        } else if (resolved.source === "grace") {
+            badge.textContent = t("pro.badgeGrace");
+            badge.classList.add("grace");
+        } else if (isPro(resolved)) {
+            badge.textContent = t("pro.badgePro");
+            badge.classList.add("pro");
+        } else {
+            badge.textContent = t("pro.badgeFree");
+        }
+    }
+    if (meta) {
+        if (resolved.source === "trial" && resolved.trialEndsAt) {
+            const days = Math.max(
+                0,
+                Math.ceil((resolved.trialEndsAt - Date.now()) / (24 * 60 * 60 * 1000))
+            );
+            meta.textContent = t("pro.trialLeft", { days });
+        } else if (
+            (resolved.source === "license" || resolved.source === "grace") &&
+            resolved.trialPausedMs > 0
+        ) {
+            const days = Math.max(0, Math.ceil(resolved.trialPausedMs / (24 * 60 * 60 * 1000)));
+            meta.textContent = t("pro.trialPaused", { days });
+        } else if (!isPro(resolved)) {
+            meta.textContent = t("pro.featuresHint");
+        } else {
+            meta.textContent = t("pro.summary", { tier: "Pro" });
+        }
+    }
+
+    const pro = isPro(resolved);
+    setProTag("autoCartProTag", !pro);
+    setProTag("pollProTag", !pro);
+    setProTag("soundProTag", !pro);
+    setProTag("debugProTag", !pro);
+    setProTag("expandProTag", !pro);
+    document.getElementById("openWatchlistBtn")?.classList.toggle("pro-lock", !pro);
+    document.getElementById("autoCartLabel")?.classList.toggle("pro-lock", !pro);
+    document.getElementById("alertSoundLabel")?.classList.toggle("pro-lock", !pro);
+    document.getElementById("pollMinutes").disabled = !pro;
+    document.getElementById("debugDetails").hidden = !pro;
+    document.querySelectorAll("#chartRanges .range-btn").forEach((btn) => {
+        const range = btn.dataset.range || "day";
+        const locked = !canChartRange(range, resolved);
+        btn.classList.toggle("pro-locked", locked);
+        btn.title = locked ? t("pro.limitChart") : "";
+    });
+    if (chartState?.bId && !canChartRange(chartState.range, resolved)) {
+        chartState.range = "day";
+        document.querySelectorAll("#chartRanges .range-btn").forEach((b) => {
+            b.classList.toggle("active", b.dataset.range === "day");
+        });
+        renderPriceChart();
+    }
+}
+
+function setProTag(id, show) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !show;
+}
+
+function showUpgradeModal(bodyText) {
+    const overlay = document.getElementById("upgradeOverlay");
+    const body = document.getElementById("upgradeBody");
+    if (body) body.textContent = bodyText || t("pro.upgradeBody");
+    overlay?.classList.add("show");
+    overlay?.setAttribute("aria-hidden", "false");
+}
+
+function hideUpgradeModal() {
+    const overlay = document.getElementById("upgradeOverlay");
+    overlay?.classList.remove("show");
+    overlay?.setAttribute("aria-hidden", "true");
+}
+
+function licenseErrorMessage(error) {
+    const code = String(error || "");
+    if (code === "empty_key") return t("pro.emptyKey");
+    if (code === "invalid_key" || code.startsWith("http_")) return t("pro.invalidKey");
+    if (code === "network") return t("pro.networkError");
+    return t("pro.activateFailed");
+}
+
+function setLicenseMsg(ok, message) {
+    const el = document.getElementById("licenseMsg");
+    if (!el) return;
+    el.textContent = message || "";
+    if (ok === true) el.className = "ok";
+    else if (ok === false) el.className = "err";
+    else el.className = "";
+}
+
 function setStatusUi(ok, message) {
     const el = document.getElementById("status-box");
     el.textContent = message || "";
@@ -974,6 +1414,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (changes.cartArchive) loadCartArchive();
     if (changes.priceHistory && chartState.bId) renderPriceChart();
     if (changes.token) updateTokenBanner(changes.token.newValue || "");
+    if (changes.entitlement || changes.devForcePro || changes.installAt) {
+        refreshEntitlementUi();
+    }
     if (changes.lastStatus && changes.lastStatus.newValue) {
         const s = changes.lastStatus.newValue;
         setStatusUi(s.ok, s.message);
