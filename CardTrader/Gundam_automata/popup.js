@@ -340,6 +340,22 @@ document.addEventListener("click", async (e) => {
         return;
     }
 
+    const purchasedBtn = e.target.closest(".purchased-btn");
+    if (purchasedBtn) {
+        const index = parseInt(purchasedBtn.dataset.index, 10);
+        if (!Number.isFinite(index)) return;
+        const data = await chrome.storage.local.get(["cartArchive"]);
+        const archive = Array.isArray(data.cartArchive) ? data.cartArchive : [];
+        if (!archive[index]) return;
+        archive[index] = {
+            ...archive[index],
+            purchased: !archive[index].purchased
+        };
+        await chrome.storage.local.set({ cartArchive: archive });
+        loadCartArchive();
+        return;
+    }
+
     if (!e.target.classList.contains("remove")) return;
     const listType = e.target.dataset.list;
     const index = parseInt(e.target.dataset.index, 10);
@@ -642,6 +658,18 @@ function channelClass(item) {
     return "ch-normal";
 }
 
+function isUnderTarget(item) {
+    const z =
+        item.watchZero &&
+        item.lastSeenZero != null &&
+        Number(item.lastSeenZero) <= Number(item.target);
+    const n =
+        item.watchNormal &&
+        item.lastSeenNormal != null &&
+        Number(item.lastSeenNormal) <= Number(item.target);
+    return Boolean(z || n);
+}
+
 function formatCheckTime(ts) {
     if (ts == null || !Number.isFinite(Number(ts))) return "—";
     const d = new Date(Number(ts));
@@ -651,6 +679,16 @@ function formatCheckTime(ts) {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
     return `${hh}:${mm} ${day}/${month}/${year}`;
+}
+
+function cardTraderUrl(bId) {
+    return `https://www.cardtrader.com/cards/${Number(bId)}`;
+}
+
+function cardNameLink(bId, label, withId = true) {
+    const name = escapeHtml(label || `ID ${bId}`);
+    const idBit = withId && label ? ` <small>(${bId})</small>` : "";
+    return `<a class="card-link" href="${cardTraderUrl(bId)}" target="_blank" rel="noopener noreferrer" title="Apri su CardTrader">${name}</a>${idBit}`;
 }
 
 function priceLine(tag, tagClass, nowValue, minValue, checkedAt, watching, target) {
@@ -787,11 +825,12 @@ function loadCartArchive() {
                     ? new Date(item.addedAt).toLocaleString()
                     : "";
 
+                const purchased = Boolean(item.purchased);
                 const div = document.createElement("div");
-                div.className = "archive-item";
+                div.className = `archive-item${purchased ? " purchased" : ""}`;
                 div.innerHTML = `
                   <div>
-                    <div><b>${escapeHtml(item.label || `ID ${item.bId}`)}</b> ${channel}</div>
+                    <div>${cardNameLink(item.bId, item.label, false)} ${channel}</div>
                     <div class="meta">
                       Qty: <b>${qty}</b>
                       · €${unit.toFixed(2)}/pz
@@ -802,7 +841,12 @@ function loadCartArchive() {
                       ${when ? ` · ${when}` : ""}
                     </div>
                   </div>
-                  <span class="remove" data-list="archive" data-index="${index}" title="Rimuovi dall'archivio">✖</span>
+                  <div class="archive-actions">
+                    <button type="button" class="purchased-btn${purchased ? " on" : ""}" data-index="${index}" title="${purchased ? "Segna come non acquistato" : "Segna come acquistato"}">
+                      Acquistato
+                    </button>
+                    <span class="remove" data-list="archive" data-index="${index}" title="Rimuovi dall'archivio">✖</span>
+                  </div>
                 `;
                 container.appendChild(div);
             });
@@ -835,10 +879,9 @@ function loadList() {
 
         list.forEach((item, index) => {
             const div = document.createElement("div");
-            div.className = `card-item ${channelClass(item)}`;
-            const title = item.label
-                ? `${escapeHtml(item.label)} <small>(${item.bId})</small>`
-                : `ID: <b>${item.bId}</b>`;
+            const under = isUnderTarget(item);
+            div.className = `card-item ${channelClass(item)}${under ? " under" : ""}`;
+            const title = cardNameLink(item.bId, item.label, true);
             const autoClass = item.autoCart ? "on" : "off";
             const autoText = item.autoCart ? "Auto-cart: sì" : "Auto-cart: no";
             const lastAlert =

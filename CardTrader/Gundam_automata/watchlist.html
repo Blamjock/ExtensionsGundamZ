@@ -130,8 +130,8 @@
     .card.ch-zero { border-left-color: #27ae60; }
     .card.ch-normal { border-left-color: #2980b9; }
     .card.under {
-      background: #eafaf1;
-      box-shadow: 0 0 0 1px #a9dfbf;
+      background: #fdecea;
+      box-shadow: 0 0 0 1px #f5b7b1;
     }
     .card-top {
       display: flex;
@@ -145,6 +145,15 @@
       line-height: 1.25;
       word-break: break-word;
     }
+    .card-title a {
+      color: inherit;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .card-title a:hover {
+      color: #2980b9;
+      text-decoration: underline;
+    }
     .card-title small {
       font-weight: 500;
       color: #7f8c8d;
@@ -155,23 +164,137 @@
       gap: 4px;
       flex-shrink: 0;
     }
+    .card-actions .chart-btn,
     .card-actions .remove-btn {
       width: 24px;
       height: 24px;
       padding: 0;
-      border: 1px solid #e74c3c;
       border-radius: 3px;
       background: #fff;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      line-height: 0;
+    }
+    .card-actions .chart-btn {
+      border: 1px solid #bdc3c7;
+      color: #2980b9;
+    }
+    .card-actions .chart-btn:hover { background: #eaf2f8; border-color: #2980b9; }
+    .card-actions .chart-btn svg { width: 14px; height: 14px; display: block; }
+    .card-actions .remove-btn {
+      border: 1px solid #e74c3c;
       color: #e74c3c;
       font-weight: bold;
       font-size: 0.85em;
-      line-height: 0;
     }
     .card-actions .remove-btn:hover { background: #fdecea; }
+
+    #chartOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(44, 62, 80, 0.55);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #chartOverlay.show { display: flex; }
+    #chartPanel {
+      background: #fff;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 720px;
+      max-height: calc(100vh - 40px);
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    #chartHeader {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #eee;
+    }
+    #chartTitle { font-size: 1em; font-weight: 700; color: #2c3e50; line-height: 1.3; }
+    #chartTitle small { display: block; font-weight: 500; color: #7f8c8d; margin-top: 2px; }
+    #chartClose {
+      background: transparent;
+      border: none;
+      color: #7f8c8d;
+      padding: 2px 6px;
+      font-size: 1.2em;
+      line-height: 1;
+      cursor: pointer;
+    }
+    #chartClose:hover { color: #c0392b; }
+    #chartRanges {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px 0;
+    }
+    .range-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: #ecf0f1;
+      color: #34495e;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .range-btn.active { background: #2980b9; color: #fff; }
+    #chartStats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      padding: 10px 16px;
+      font-size: 0.82em;
+      color: #555;
+    }
+    #chartStats b { color: #2c3e50; }
+    #chartLegend {
+      display: flex;
+      gap: 14px;
+      padding: 0 16px 8px;
+      font-size: 0.8em;
+      color: #666;
+    }
+    #chartLegend .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    #chartLegend .dot.zero { background: #27ae60; }
+    #chartLegend .dot.normal { background: #2980b9; }
+    #chartCanvasWrap {
+      padding: 0 12px 14px;
+      flex: 1;
+      min-height: 260px;
+    }
+    #chartCanvas {
+      width: 100%;
+      height: 260px;
+      display: block;
+    }
+    #chartEmpty {
+      display: none;
+      text-align: center;
+      color: #999;
+      font-size: 0.9em;
+      padding: 48px 16px;
+    }
+    #chartEmpty.show { display: block; }
     .row-meta {
       color: #666;
       font-size: 0.95em;
@@ -208,7 +331,19 @@
       text-decoration: underline;
       text-decoration-color: #27ae60;
     }
-    .price-cell .min { color: #888; font-size: 0.9em; }
+    .price-cell .when { color: #888; font-size: 0.85em; display: block; }
+    .price-cell .min { color: #888; font-size: 0.9em; display: block; }
+    .trend {
+      display: inline-block;
+      font-weight: 800;
+      font-size: 0.95em;
+      line-height: 1;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+    .trend.down { color: #27ae60; }
+    .trend.up { color: #e74c3c; }
+    .trend.eq { color: #2980b9; font-size: 0.85em; }
     .badge {
       display: inline-block;
       padding: 1px 6px;
@@ -221,7 +356,7 @@
     .badge.zero { background: #d5f5e3; color: #1e8449; }
     .badge.normal { background: #d6eaf8; color: #1a5276; }
     .badge.both { background: #f5eef8; color: #6c3483; }
-    .badge.hit { background: #27ae60; color: #fff; }
+    .badge.hit { background: #e74c3c; color: #fff; }
     #empty {
       display: none;
       text-align: center;
@@ -278,6 +413,29 @@
     <div id="empty">Nessuna carta. Prova a modificare la ricerca.</div>
     <div id="grid"></div>
   </main>
+
+  <div id="chartOverlay" aria-hidden="true">
+    <div id="chartPanel">
+      <div id="chartHeader">
+        <div id="chartTitle">Grafico prezzi</div>
+        <button type="button" id="chartClose" title="Chiudi">✕</button>
+      </div>
+      <div id="chartRanges">
+        <button type="button" class="range-btn active" data-range="day">Giorno</button>
+        <button type="button" class="range-btn" data-range="week">Settimana</button>
+        <button type="button" class="range-btn" data-range="month">Mese</button>
+      </div>
+      <div id="chartStats"></div>
+      <div id="chartLegend">
+        <span><span class="dot zero"></span>CT Zero</span>
+        <span><span class="dot normal"></span>Normale</span>
+      </div>
+      <div id="chartEmpty">Nessun dato ancora. Aspetta i prossimi check.</div>
+      <div id="chartCanvasWrap">
+        <canvas id="chartCanvas" width="680" height="260"></canvas>
+      </div>
+    </div>
+  </div>
 
   <script src="watchlist.js"></script>
 </body>

@@ -600,7 +600,8 @@ async function archiveCartAdd(entry) {
             quantity: Number(archive[idx].quantity || 0) + Number(entry.quantity || 1),
             unitPrice: entry.unitPrice,
             label: entry.label || archive[idx].label,
-            addedAt: Date.now()
+            addedAt: Date.now(),
+            purchased: Boolean(archive[idx].purchased)
         };
     } else {
         archive.unshift({
@@ -611,7 +612,8 @@ async function archiveCartAdd(entry) {
             channel: entry.channel,
             unitPrice: Number(entry.unitPrice) || 0,
             quantity: Number(entry.quantity) || 1,
-            addedAt: Date.now()
+            addedAt: Date.now(),
+            purchased: false
         });
     }
 
