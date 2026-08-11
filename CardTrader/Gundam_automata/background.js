@@ -1,3 +1,5 @@
+import { init as initI18n, t } from "./i18n.js";
+
 const BASE_URL = "https://api.cardtrader.com/api/v2";
 const ALARM_NAME = "sniperLoop";
 const DEFAULT_POLL_MINUTES = 2;
@@ -7,13 +9,17 @@ const HISTORY_MAX_AGE_MS = 32 * 24 * 60 * 60 * 1000;
 const HISTORY_MAX_POINTS = 2500;
 const HISTORY_KEEP_RECENT = 720;
 
+const i18nReady = initI18n().catch((err) => console.error("i18n init:", err));
+
 chrome.runtime.onInstalled.addListener(async () => {
+    await i18nReady;
     await migrateStorage();
     await ensureAlarm();
     await aggiornaOrarioProssimoCheck();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+    await i18nReady;
     await migrateStorage();
     await ensureAlarm();
     await aggiornaOrarioProssimoCheck();
@@ -34,8 +40,11 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "runCheckNow") {
-        aggiornaOrarioProssimoCheck();
-        avviaControlloLista()
+        i18nReady
+            .then(() => {
+                aggiornaOrarioProssimoCheck();
+                return avviaControlloLista();
+            })
             .then(() => sendResponse({ ok: true }))
             .catch((err) => sendResponse({ ok: false, error: String(err) }));
         return true;
@@ -282,6 +291,25 @@ async function setLastStatus(ok, message) {
 }
 
 async function saveWatchList(list) {
+    // #region agent log
+    const under = (list || [])
+        .filter((it) => {
+            const z = it.watchZero !== false && it.lastSeenZero != null && Number(it.lastSeenZero) <= Number(it.target);
+            const n = it.watchNormal !== false && it.lastSeenNormal != null && Number(it.lastSeenNormal) <= Number(it.target);
+            return z || n;
+        })
+        .map((it) => ({
+            bId: it.bId,
+            z: it.lastSeenZero,
+            zAt: it.lastSeenZeroAt,
+            n: it.lastSeenNormal,
+            nAt: it.lastSeenNormalAt,
+            minZ: it.minZero,
+            lastAlert: it.lastAlertPrice,
+            lastCart: it.lastCartProductId
+        }));
+    fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId:globalThis.__dbgRunId||'n/a',hypothesisId:'B',location:'background.js:saveWatchList',message:'persisting watchList',data:{count:list?.length,underCount:under.length,under},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     await chrome.storage.local.set({ watchList: list });
 }
 
@@ -345,7 +373,7 @@ async function removePriceHistory(bId) {
 async function valutaCanale({ item, next, listing, channel, token }) {
     const currentPrice = listing.price.cents / 100;
     const productId = listing.id;
-    const channelLabel = channel === "zero" ? "CT Zero" : "Normale";
+    const channelLabel = channel === "zero" ? t("channel.ctZero") : t("channel.normal");
 
     if (channel === "zero") next.lastSeenZero = currentPrice;
     else next.lastSeenNormal = currentPrice;
@@ -369,9 +397,9 @@ async function valutaCanale({ item, next, listing, channel, token }) {
         });
         if (aggiunto) {
             next.lastCartProductId = productId;
-            cartNote = " — aggiunto al carrello";
+            cartNote = t("bg.cartAdded");
         } else {
-            cartNote = " — add-to-cart fallito";
+            cartNote = t("bg.cartFailed");
         }
     }
 
@@ -389,9 +417,14 @@ async function valutaCanale({ item, next, listing, channel, token }) {
     }
 
     const name = item.label || `ID ${item.bId}`;
-    const msg = `${name} [${channelLabel}]: €${currentPrice.toFixed(2)} ≤ target €${item.target.toFixed(2)}`;
+    const msg = t("bg.notifyBody", {
+        name,
+        channel: channelLabel,
+        price: currentPrice.toFixed(2),
+        target: item.target.toFixed(2)
+    });
 
-    inviaNotifica("Prezzo basso!", msg + cartNote);
+    inviaNotifica(t("bg.notifyTitle"), msg + cartNote);
     next.lastAlertProductId = productId;
     next.lastAlertAt = Date.now();
     next.lastAlertPrice = currentPrice;
@@ -400,14 +433,15 @@ async function valutaCanale({ item, next, listing, channel, token }) {
 }
 
 async function avviaControlloLista() {
+    await i18nReady;
     await migrateStorage();
     const data = await chrome.storage.local.get(["token", "watchList"]);
     if (!data.token) {
-        await setLastStatus(false, "Token API mancante");
+        await setLastStatus(false, t("bg.tokenMissing"));
         return;
     }
     if (!data.watchList || data.watchList.length === 0) {
-        await setLastStatus(true, "Lista vuota — nessun check");
+        await setLastStatus(true, t("bg.listEmpty"));
         return;
     }
 
@@ -416,6 +450,12 @@ async function avviaControlloLista() {
     let checked = 0;
     let alerts = 0;
     const historySamples = {};
+    // #region agent log
+    const runId = `chk_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    globalThis.__dbgRunId = runId;
+    globalThis.__dbgCheckDepth = (globalThis.__dbgCheckDepth || 0) + 1;
+    fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId,hypothesisId:'B',location:'background.js:avviaControlloLista:start',message:'check loop start',data:{depth:globalThis.__dbgCheckDepth,listLen:list.length,sample:list.filter(x=>Number(x.bId)===400975|| (x.watchZero!==false&&x.lastSeenZero!=null&&Number(x.lastSeenZero)<=Number(x.target))).slice(0,5).map(x=>({bId:x.bId,z:x.lastSeenZero,zAt:x.lastSeenZeroAt,target:x.target,lastAlert:x.lastAlertPrice,lastCart:x.lastCartProductId}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     for (let i = 0; i < list.length; i++) {
         const item = list[i];
@@ -434,6 +474,9 @@ async function avviaControlloLista() {
             if (!result.ok) {
                 errors += 1;
                 console.error(`Blueprint ${item.bId}: HTTP ${result.status}`);
+                // #region agent log
+                fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId,hypothesisId:'A',location:'background.js:avviaControlloLista:httpFail',message:'item skipped HTTP fail',data:{bId:item.bId,status:result.status,prevZ:item.lastSeenZero,prevZAt:item.lastSeenZeroAt},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
                 continue;
             }
 
@@ -478,6 +521,19 @@ async function avviaControlloLista() {
                 n: next.lastSeenNormal
             };
 
+            const wasUnder =
+                (item.watchZero && item.lastSeenZero != null && Number(item.lastSeenZero) <= Number(item.target)) ||
+                (item.watchNormal && item.lastSeenNormal != null && Number(item.lastSeenNormal) <= Number(item.target));
+            const nowUnder =
+                (item.watchZero && next.lastSeenZero != null && Number(next.lastSeenZero) <= Number(item.target)) ||
+                (item.watchNormal && next.lastSeenNormal != null && Number(next.lastSeenNormal) <= Number(item.target));
+            const interesting = wasUnder || nowUnder || Number(item.bId) === 400975;
+            // #region agent log
+            if (interesting) {
+                fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId,hypothesisId:'C',location:'background.js:avviaControlloLista:prices',message:'prices computed before alert',data:{bId:item.bId,target:item.target,wasUnder,nowUnder,prevZ:item.lastSeenZero,prevZAt:item.lastSeenZeroAt,newZ:next.lastSeenZero,newZAt:next.lastSeenZeroAt,prevN:item.lastSeenNormal,newN:next.lastSeenNormal,minZ:next.minZero,bestZeroId:bestZero?.id??null,bestZeroCents:bestZero?.price?.cents??null,listings:listings.length,priceChanged:item.lastSeenZero!==next.lastSeenZero,tsAdvanced:item.lastSeenZeroAt!==next.lastSeenZeroAt},timestamp:Date.now()})}).catch(()=>{});
+            }
+            // #endregion
+
             if (item.watchZero && bestZero) {
                 const r = await valutaCanale({
                     item,
@@ -488,6 +544,11 @@ async function avviaControlloLista() {
                 });
                 next = r.next;
                 if (r.alerted) alerts += 1;
+                // #region agent log
+                if (interesting) {
+                    fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId,hypothesisId:'E',location:'background.js:valutaCanale:zero',message:'zero channel evaluated',data:{bId:item.bId,alerted:r.alerted,z:next.lastSeenZero,zAt:next.lastSeenZeroAt,lastAlertPrice:next.lastAlertPrice,lastAlertProductId:next.lastAlertProductId,lastCartProductId:next.lastCartProductId,currentPrice:(bestZero.price.cents/100),sameAsPrevAlert:bestZero.id===item.lastAlertProductId},timestamp:Date.now()})}).catch(()=>{});
+                }
+                // #endregion
             }
 
             if (item.watchNormal && bestNormal) {
@@ -506,23 +567,30 @@ async function avviaControlloLista() {
         } catch (error) {
             errors += 1;
             console.error("Errore nel ciclo alert:", error);
+            // #region agent log
+            fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId,hypothesisId:'A',location:'background.js:avviaControlloLista:catch',message:'item exception',data:{bId:item.bId,error:String(error)},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
         }
     }
 
     await saveWatchList(list);
     await mergePriceHistory(historySamples);
+    // #region agent log
+    globalThis.__dbgCheckDepth = Math.max(0, (globalThis.__dbgCheckDepth || 1) - 1);
+    fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId,hypothesisId:'A',location:'background.js:avviaControlloLista:end',message:'check loop end',data:{checked,alerts,errors,depthAfter:globalThis.__dbgCheckDepth},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     if (errors > 0 && checked === 0) {
-        await setLastStatus(false, `Check fallito (${errors} errori API)`);
+        await setLastStatus(false, t("bg.checkFailed", { errors }));
     } else if (errors > 0) {
         await setLastStatus(
             true,
-            `Check ok: ${checked} carte, ${alerts} alert, ${errors} errori`
+            t("bg.checkOkErrors", { checked, alerts, errors })
         );
     } else {
         await setLastStatus(
             true,
-            `Check ok: ${checked} carte, ${alerts} alert`
+            t("bg.checkOk", { checked, alerts })
         );
     }
 }
@@ -563,7 +631,10 @@ async function aggiungiAlCarrello(token, productId, viaZero, meta = {}) {
             console.error(`cart/add HTTP ${result.status}`, result.body);
             await setLastStatus(
                 false,
-                `Add-to-cart fallito HTTP ${result.status}: ${summarizeError(result.body)}`
+                t("bg.cartHttpFail", {
+                    status: result.status,
+                    detail: summarizeError(result.body)
+                })
             );
             return false;
         }
@@ -579,7 +650,7 @@ async function aggiungiAlCarrello(token, productId, viaZero, meta = {}) {
         return true;
     } catch (e) {
         console.error("cart/add error:", e);
-        await setLastStatus(false, `Add-to-cart errore: ${String(e)}`);
+        await setLastStatus(false, t("bg.cartError", { error: String(e) }));
         return false;
     }
 }
@@ -640,7 +711,7 @@ function normalizeAddress(addr) {
 }
 
 function summarizeError(body) {
-    if (body == null) return "nessun dettaglio";
+    if (body == null) return t("bg.noDetail");
     if (typeof body === "string") return body.slice(0, 120);
     try {
         return JSON.stringify(body).slice(0, 160);
@@ -684,8 +755,8 @@ async function ensureOffscreenDocument() {
     await chrome.offscreen.createDocument({
         url: "offscreen.html",
         reasons: ["AUDIO_PLAYBACK"],
-        justification: "Riproduce un suono quando viene trovato un prezzo sotto soglia"
+        justification: t("bg.offscreenJustification")
     });
 }
 
-migrateStorage().then(() => ensureAlarm()).then(() => aggiornaOrarioProssimoCheck());
+i18nReady.then(() => migrateStorage()).then(() => ensureAlarm()).then(() => aggiornaOrarioProssimoCheck());

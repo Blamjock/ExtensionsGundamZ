@@ -1,42 +1,66 @@
-document.addEventListener("DOMContentLoaded", () => {
+import { init as initI18n, t, applyDom, setLocale, getLocale, getLocaleBcp47, onLocaleChange } from "./i18n.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await initI18n();
+    applyDom();
+    const localeSelect = document.getElementById("localeSelect");
+    if (localeSelect) localeSelect.value = getLocale();
     loadAll();
     avviaVisualizzazioneTimer();
+});
+
+onLocaleChange(() => {
+    applyDom();
+    const localeSelect = document.getElementById("localeSelect");
+    if (localeSelect) localeSelect.value = getLocale();
+    loadList();
+    loadCartArchive();
+    if (chartState.bId) {
+        document.getElementById("chartTitle").innerHTML =
+            `${escapeHtml(chartState.label)}<small>${t("chart.blueprint", { id: chartState.bId })}</small>`;
+        renderPriceChart();
+    }
+});
+
+document.getElementById("localeSelect").addEventListener("change", async (e) => {
+    await setLocale(e.target.value);
+    setStatusUi(true, t("status.localeChanged", { lang: t(`lang.${getLocale()}`) }));
 });
 
 document.getElementById("saveTokenBtn").addEventListener("click", async () => {
     const token = document.getElementById("apiToken").value.trim();
     if (!token) {
-        alert("Inserisci il token API.");
+        alert(t("alert.enterToken"));
         return;
     }
     await chrome.storage.local.set({ token });
     updateTokenBanner(token);
-    setStatusUi(true, "Token salvato");
+    setStatusUi(true, t("status.tokenSaved"));
 });
 
 document.getElementById("savePollBtn").addEventListener("click", async () => {
     let minutes = parseInt(document.getElementById("pollMinutes").value, 10);
     if (!Number.isFinite(minutes) || minutes < 1 || minutes > 5) {
-        alert("Intervallo tra 1 e 5 minuti.");
+        alert(t("alert.pollRange"));
         return;
     }
     await chrome.storage.local.set({ pollMinutes: minutes });
     const prossimo = Date.now() + minutes * 60 * 1000;
     await chrome.storage.local.set({ nextTick: prossimo });
-    setStatusUi(true, `Polling ogni ${minutes} min`);
+    setStatusUi(true, t("status.pollEvery", { minutes }));
 });
 
 document.getElementById("debugMode").addEventListener("change", async (e) => {
     const enabled = e.target.checked;
     await chrome.storage.local.set({ debugMode: enabled });
     updateDebugPanel(enabled);
-    setStatusUi(true, enabled ? "Debug API attivo" : "Debug API disattivo");
+    setStatusUi(true, enabled ? t("status.debugOn") : t("status.debugOff"));
 });
 
 document.getElementById("alertSound").addEventListener("change", async (e) => {
     const enabled = e.target.checked;
     await chrome.storage.local.set({ alertSound: enabled });
-    setStatusUi(true, enabled ? "Suono alert attivo" : "Suono alert disattivo");
+    setStatusUi(true, enabled ? t("status.soundOn") : t("status.soundOff"));
 });
 
 document.getElementById("testSoundBtn").addEventListener("click", async () => {
@@ -62,10 +86,10 @@ document.getElementById("openWatchlistBtn").addEventListener("click", () => {
 });
 
 document.getElementById("runCheckBtn").addEventListener("click", async () => {
-    setStatusUi(true, "Check in corso…");
+    setStatusUi(true, t("status.checkRunning"));
     const res = await chrome.runtime.sendMessage({ type: "runCheckNow" });
-    if (res?.ok) setStatusUi(true, "Check completato — apri il log debug");
-    else setStatusUi(false, res?.error || "Check fallito");
+    if (res?.ok) setStatusUi(true, t("status.checkDone"));
+    else setStatusUi(false, res?.error || t("status.checkFailed"));
 });
 
 function updateDebugPanel(enabled) {
@@ -82,11 +106,11 @@ document.getElementById("saveAddrBtn").addEventListener("click", async () => {
         country_code: document.getElementById("addrCountry").value.trim().toUpperCase()
     };
     if (!cartAddress.name || !cartAddress.street || !cartAddress.zip || !cartAddress.city || !cartAddress.country_code) {
-        alert("Compila almeno Nome, Via, CAP, Città e Paese (IT).");
+        alert(t("alert.addrRequired"));
         return;
     }
     await chrome.storage.local.set({ cartAddress });
-    setStatusUi(true, "Indirizzo salvato per /cart/add");
+    setStatusUi(true, t("status.addrSaved"));
 });
 
 const VALID_TABS = ["carte", "archivio", "impostazioni"];
@@ -143,7 +167,7 @@ document.getElementById("fillFromPageBtn").addEventListener("click", async () =>
     try {
         const card = await readCardFromActiveTab();
         if (!card?.blueprintId) {
-            setStatusUi(false, card?.error || "Apri una scheda carta su CardTrader");
+            setStatusUi(false, card?.error || t("status.openCtCard"));
             return;
         }
 
@@ -164,11 +188,11 @@ document.getElementById("fillFromPageBtn").addEventListener("click", async () =>
             }
         }
 
-        setStatusUi(true, `Importata: ${card.label || `ID ${card.blueprintId}`}`);
+        setStatusUi(true, t("status.imported", { name: card.label || `ID ${card.blueprintId}` }));
         priceEl.focus();
         priceEl.select();
     } catch (err) {
-        setStatusUi(false, err?.message || "Impossibile leggere la pagina");
+        setStatusUi(false, err?.message || t("status.readPageFailed"));
     } finally {
         btn.disabled = false;
     }
@@ -184,7 +208,7 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     const watchNormal = document.getElementById("watchNormal").checked;
 
     if (!token) {
-        alert("Salva prima il token API.");
+        alert(t("alert.saveTokenFirst"));
         await switchTab("impostazioni");
         document.getElementById("tokenDetails").open = true;
         await chrome.storage.local.set({ tokenPanelOpen: true });
@@ -192,15 +216,15 @@ document.getElementById("addBtn").addEventListener("click", async () => {
         return;
     }
     if (!Number.isFinite(bId) || bId <= 0) {
-        alert("Blueprint ID non valido.");
+        alert(t("alert.invalidBlueprint"));
         return;
     }
     if (!Number.isFinite(price) || price <= 0) {
-        alert("Prezzo max non valido.");
+        alert(t("alert.invalidPrice"));
         return;
     }
     if (!watchZero && !watchNormal) {
-        alert("Seleziona almeno un canale: CT Zero e/o Normale.");
+        alert(t("alert.selectChannel"));
         return;
     }
 
@@ -233,6 +257,9 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     if (existing >= 0) list[existing] = entry;
     else list.push(entry);
 
+    // #region agent log
+    fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId:'popup-save',hypothesisId:'D',location:'popup.js:addBtn',message:'popup writing watchList',data:{bId,existing:existing>=0,lastSeenZero:entry.lastSeenZero,lastSeenZeroAt:entry.lastSeenZeroAt,minZero:entry.minZero,lastAlertPrice:entry.lastAlertPrice},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     await chrome.storage.local.set({
         token,
         watchList: list,
@@ -251,19 +278,19 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     document.getElementById("autoCart").checked = autoCart;
     document.getElementById("watchZero").checked = watchZero;
     document.getElementById("watchNormal").checked = watchNormal;
-    setStatusUi(true, `Aggiunta · impostazioni mantenute`);
+    setStatusUi(true, t("status.addedKept"));
     loadList();
 });
 
 async function readCardFromActiveTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !tab.url) {
-        return { error: "Nessuna scheda attiva" };
+        return { error: t("status.noActiveTab") };
     }
 
     const fromUrl = parseCardFromUrl(tab.url);
     if (!fromUrl) {
-        return { error: "Non sei su una pagina carta CardTrader (/cards/…)" };
+        return { error: t("status.notCtCardPage") };
     }
 
     let label = fromUrl.label;
@@ -361,7 +388,7 @@ document.addEventListener("click", async (e) => {
     const index = parseInt(e.target.dataset.index, 10);
 
     if (listType === "archive") {
-        if (!confirm("Rimuovere questa carta dall'archivio?")) return;
+        if (!confirm(t("confirm.removeArchive"))) return;
         const data = await chrome.storage.local.get(["cartArchive"]);
         const archive = data.cartArchive || [];
         archive.splice(index, 1);
@@ -370,7 +397,7 @@ document.addEventListener("click", async (e) => {
         return;
     }
 
-    if (!confirm("Rimuovere questa carta dal monitoraggio?")) return;
+    if (!confirm(t("confirm.removeWatch"))) return;
 
     const data = await chrome.storage.local.get(["watchList"]);
     const list = data.watchList || [];
@@ -411,7 +438,7 @@ async function openPriceChart(bId, label) {
         b.classList.toggle("active", b.dataset.range === chartState.range);
     });
     document.getElementById("chartTitle").innerHTML =
-        `${escapeHtml(label)}<small>Blueprint ${bId}</small>`;
+        `${escapeHtml(label)}<small>${t("chart.blueprint", { id: bId })}</small>`;
     document.getElementById("chartOverlay").classList.add("show");
     document.getElementById("chartOverlay").setAttribute("aria-hidden", "false");
     await renderPriceChart();
@@ -443,7 +470,7 @@ async function renderPriceChart() {
     if (filtered.length === 0) {
         empty.classList.add("show");
         wrap.style.display = "none";
-        statsEl.textContent = "Nessun campione in questo intervallo.";
+        statsEl.textContent = t("chart.noSamples");
         return;
     }
 
@@ -473,12 +500,12 @@ async function renderPriceChart() {
     const nMax = normals.length ? Math.max(...normals) : null;
 
     statsEl.innerHTML = `
-      <span>Campioni: <b>${filtered.length}</b></span>
-      <span>Zero: <b>${formatEuro(last.z)}</b> (${fmtDelta(zDelta)})</span>
-      <span>Normale: <b>${formatEuro(last.n)}</b> (${fmtDelta(nDelta)})</span>
-      <span>Min Z/N: <b>${formatEuro(zMin)}</b> / <b>${formatEuro(nMin)}</b></span>
-      <span>Max Z/N: <b>${formatEuro(zMax)}</b> / <b>${formatEuro(nMax)}</b></span>
-      <span>Da ${formatCheckTime(first.t)}</span>
+      <span>${t("chart.stats.samples", { n: `<b>${filtered.length}</b>` })}</span>
+      <span>${t("chart.stats.zero", { price: `<b>${formatEuro(last.z)}</b>`, delta: fmtDelta(zDelta) })}</span>
+      <span>${t("chart.stats.normal", { price: `<b>${formatEuro(last.n)}</b>`, delta: fmtDelta(nDelta) })}</span>
+      <span>${t("chart.stats.minZN", { z: `<b>${formatEuro(zMin)}</b>`, n: `<b>${formatEuro(nMin)}</b>` })}</span>
+      <span>${t("chart.stats.maxZN", { z: `<b>${formatEuro(zMax)}</b>`, n: `<b>${formatEuro(nMax)}</b>` })}</span>
+      <span>${t("chart.stats.from", { when: formatCheckTime(first.t) })}</span>
     `;
 
     drawPriceChart(canvas, filtered, range);
@@ -596,7 +623,7 @@ function formatChartTick(ts, range) {
 }
 
 document.getElementById("clearArchiveBtn").addEventListener("click", async () => {
-    if (!confirm("Svuotare tutto l'archivio carrello?")) return;
+    if (!confirm(t("confirm.clearArchive"))) return;
     await chrome.storage.local.set({ cartArchive: [] });
     loadCartArchive();
 });
@@ -646,10 +673,10 @@ function formatEuro(v) {
 
 function channelBadge(item) {
     if (item.watchZero && item.watchNormal) {
-        return '<span class="badge both">Zero + Normale</span>';
+        return `<span class="badge both">${t("channel.zeroPlusNormal")}</span>`;
     }
-    if (item.watchZero) return '<span class="badge zero">Solo Zero</span>';
-    return '<span class="badge normal">Solo Normale</span>';
+    if (item.watchZero) return `<span class="badge zero">${t("channel.onlyZero")}</span>`;
+    return `<span class="badge normal">${t("channel.onlyNormal")}</span>`;
 }
 
 function channelClass(item) {
@@ -688,23 +715,24 @@ function cardTraderUrl(bId) {
 function cardNameLink(bId, label, withId = true) {
     const name = escapeHtml(label || `ID ${bId}`);
     const idBit = withId && label ? ` <small>(${bId})</small>` : "";
-    return `<a class="card-link" href="${cardTraderUrl(bId)}" target="_blank" rel="noopener noreferrer" title="Apri su CardTrader">${name}</a>${idBit}`;
+    return `<a class="card-link" href="${cardTraderUrl(bId)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(t("card.openOnCt"))}">${name}</a>${idBit}`;
 }
 
 function priceLine(tag, tagClass, nowValue, minValue, checkedAt, watching, target) {
     const off = watching ? "" : "off";
-    const watchNote = watching ? "" : " (non monitorato)";
+    const watchNote = watching ? "" : ` ${t("card.notWatched")}`;
     const minTxt = formatEuro(minValue);
     const nowTxt = formatEuro(nowValue);
     const when = formatCheckTime(checkedAt);
     const underTarget =
         watching && nowValue != null && Number(nowValue) <= Number(target);
+    const nowBlockInner = t("price.nowBlock", { now: nowTxt, when });
     const nowBlock = underTarget
-        ? `<span class="now-under">[ Now: ${nowTxt} - ${when} ]</span>`
-        : `[ Now: ${nowTxt} - ${when} ]`;
+        ? `<span class="now-under">${nowBlockInner}</span>`
+        : nowBlockInner;
     return `<div class="price-line ${off}">
       <span class="tag ${tagClass}">${tag}${watchNote}</span>
-      <span class="val">Min: ${minTxt} - ${nowBlock}${trendIcon(nowValue, minValue)}</span>
+      <span class="val">${t("price.minNow", { min: minTxt, nowBlock })}${trendIcon(nowValue, minValue)}</span>
     </div>`;
 }
 
@@ -713,12 +741,12 @@ function trendIcon(nowValue, minValue) {
     const min = Number(minValue);
     if (!Number.isFinite(now) || !Number.isFinite(min)) return "";
     if (now < min) {
-        return ' <span class="trend down" title="Now minore del Min">↓</span>';
+        return ` <span class="trend down" title="${escapeHtml(t("trend.nowBelowMin"))}">↓</span>`;
     }
     if (now > min) {
-        return ' <span class="trend up" title="Now maggiore del Min">↑</span>';
+        return ` <span class="trend up" title="${escapeHtml(t("trend.nowAboveMin"))}">↑</span>`;
     }
-    return ' <span class="trend eq" title="Now uguale al Min">=</span>';
+    return ` <span class="trend eq" title="${escapeHtml(t("trend.nowEqualMin"))}">=</span>`;
 }
 
 async function loadAll() {
@@ -808,7 +836,7 @@ function loadCartArchive() {
         let totalSpend = 0;
 
         if (archive.length === 0) {
-            container.innerHTML = '<div class="empty">Nessuna carta aggiunta al carrello</div>';
+            container.innerHTML = `<div class="empty">${escapeHtml(t("archive.empty"))}</div>`;
         } else {
             archive.forEach((item, index) => {
                 const qty = Number(item.quantity) || 1;
@@ -819,33 +847,38 @@ function loadCartArchive() {
 
                 const channel =
                     item.channel === "zero"
-                        ? '<span class="badge zero">Zero</span>'
-                        : '<span class="badge normal">Normale</span>';
+                        ? `<span class="badge zero">${t("channel.zero")}</span>`
+                        : `<span class="badge normal">${t("channel.normal")}</span>`;
                 const when = item.addedAt
-                    ? new Date(item.addedAt).toLocaleString()
+                    ? new Date(item.addedAt).toLocaleString(getLocaleBcp47())
                     : "";
 
                 const purchased = Boolean(item.purchased);
                 const div = document.createElement("div");
                 div.className = `archive-item${purchased ? " purchased" : ""}`;
+                const qtyLine = t("archive.qtyLine", {
+                    qty: `<b>${qty}</b>`,
+                    unit: unit.toFixed(2),
+                    line: `<b>€${line.toFixed(2)}</b>`
+                });
+                const metaLine = t("archive.metaLine", {
+                    bId: item.bId ?? "—",
+                    productId: item.productId ?? "—"
+                });
                 div.innerHTML = `
                   <div>
                     <div>${cardNameLink(item.bId, item.label, false)} ${channel}</div>
+                    <div class="meta">${qtyLine}</div>
                     <div class="meta">
-                      Qty: <b>${qty}</b>
-                      · €${unit.toFixed(2)}/pz
-                      · Riga: <b>€${line.toFixed(2)}</b>
-                    </div>
-                    <div class="meta">
-                      BP ${item.bId ?? "—"} · prod ${item.productId ?? "—"}
+                      ${metaLine}
                       ${when ? ` · ${when}` : ""}
                     </div>
                   </div>
                   <div class="archive-actions">
-                    <button type="button" class="purchased-btn${purchased ? " on" : ""}" data-index="${index}" title="${purchased ? "Segna come non acquistato" : "Segna come acquistato"}">
-                      Acquistato
+                    <button type="button" class="purchased-btn${purchased ? " on" : ""}" data-index="${index}" title="${escapeHtml(purchased ? t("archive.markNotPurchased") : t("archive.markPurchased"))}">
+                      ${escapeHtml(t("archive.purchased"))}
                     </button>
-                    <span class="remove" data-list="archive" data-index="${index}" title="Rimuovi dall'archivio">✖</span>
+                    <span class="remove" data-list="archive" data-index="${index}" title="${escapeHtml(t("archive.removeTitle"))}">✖</span>
                   </div>
                 `;
                 container.appendChild(div);
@@ -861,7 +894,7 @@ function loadCartArchive() {
             const show = totalQty > 0;
             badge.classList.toggle("show", show);
             badge.textContent = show ? String(totalQty) : "0";
-            badge.title = `${archive.length} carte · €${totalSpend.toFixed(2)}`;
+            badge.title = `${archive.length} ${t("archive.cards")} · €${totalSpend.toFixed(2)}`;
         }
     });
 }
@@ -873,7 +906,7 @@ function loadList() {
         const list = (data.watchList || []).map(normalizeItem);
 
         if (list.length === 0) {
-            container.innerHTML = '<div class="empty">Nessuna carta monitorata</div>';
+            container.innerHTML = `<div class="empty">${escapeHtml(t("list.empty"))}</div>`;
             return;
         }
 
@@ -883,10 +916,13 @@ function loadList() {
             div.className = `card-item ${channelClass(item)}${under ? " under" : ""}`;
             const title = cardNameLink(item.bId, item.label, true);
             const autoClass = item.autoCart ? "on" : "off";
-            const autoText = item.autoCart ? "Auto-cart: sì" : "Auto-cart: no";
+            const autoText = item.autoCart ? t("badge.autoCartYes") : t("badge.autoCartNo");
             const lastAlert =
                 item.lastAlertChannel && item.lastAlertPrice != null
-                    ? `Ultimo alert: ${item.lastAlertChannel === "zero" ? "Zero" : "Normale"} @ ${formatEuro(item.lastAlertPrice)}`
+                    ? t("card.lastAlert", {
+                        channel: item.lastAlertChannel === "zero" ? t("channel.zero") : t("channel.normal"),
+                        price: formatEuro(item.lastAlertPrice)
+                    })
                     : "";
 
             const chartIcon = `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4 11V8M8 11V5M12 11V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
@@ -895,24 +931,24 @@ function loadList() {
             div.innerHTML = `
                 <div class="card-head">
                   <div class="card-main">
-                    <button type="button" class="chart-btn" data-bid="${item.bId}" data-label="${safeLabel}" title="Grafico prezzi">
+                    <button type="button" class="chart-btn" data-bid="${item.bId}" data-label="${safeLabel}" title="${escapeHtml(t("card.priceChart"))}">
                       ${chartIcon}
                     </button>
                     <div class="card-body">
                       <div>${title} ${channelBadge(item)}</div>
                       <div class="card-meta">
-                        Max: <b>${formatEuro(item.target)}</b>
-                        · <span class="badge ${autoClass}">${autoText}</span>
+                        ${escapeHtml(t("card.max"))} <b>${formatEuro(item.target)}</b>
+                        · <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
                       </div>
                       <div class="prices">
-                        ${priceLine("CT Zero", "zero", item.lastSeenZero, item.minZero, item.lastSeenZeroAt, item.watchZero, item.target)}
-                        ${priceLine("Normale", "normal", item.lastSeenNormal, item.minNormal, item.lastSeenNormalAt, item.watchNormal, item.target)}
+                        ${priceLine(t("channel.ctZero"), "zero", item.lastSeenZero, item.minZero, item.lastSeenZeroAt, item.watchZero, item.target)}
+                        ${priceLine(t("channel.normal"), "normal", item.lastSeenNormal, item.minNormal, item.lastSeenNormalAt, item.watchNormal, item.target)}
                       </div>
-                      ${lastAlert ? `<div class="card-meta">${lastAlert}</div>` : ""}
+                      ${lastAlert ? `<div class="card-meta">${escapeHtml(lastAlert)}</div>` : ""}
                     </div>
                   </div>
                   <div class="card-actions">
-                    <span class="remove" data-list="watch" data-index="${index}" title="Rimuovi">✖</span>
+                    <span class="remove" data-list="watch" data-index="${index}" title="${escapeHtml(t("card.remove"))}">✖</span>
                   </div>
                 </div>
             `;
@@ -959,7 +995,7 @@ function avviaVisualizzazioneTimer() {
 
         const differenza = data.nextTick - Date.now();
         if (differenza <= 0) {
-            display.innerText = "In corso...";
+            display.innerText = t("timer.inProgress");
             return;
         }
 

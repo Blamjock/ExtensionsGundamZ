@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Price Alert — Carte monitorate</title>
+  <title data-i18n="watchlist.pageTitle">Price Alert — Carte monitorate</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -384,59 +384,59 @@
 </head>
 <body>
   <header>
-    <h1>Carte monitorate</h1>
+    <h1 data-i18n="watchlist.heading">Carte monitorate</h1>
     <div id="searchWrap">
-      <input type="search" id="search" placeholder="Cerca nome o Blueprint ID…" autocomplete="off" autofocus>
-      <button type="button" id="clearSearch" title="Pulisci">✕</button>
+      <input type="search" id="search" data-i18n-placeholder="watchlist.searchPlaceholder" placeholder="Cerca nome o Blueprint ID…" autocomplete="off" autofocus>
+      <button type="button" id="clearSearch" data-i18n-title="watchlist.clearSearch" title="Pulisci">✕</button>
     </div>
     <div class="meta-bar">
       <span id="countInfo">0 / 0</span>
       <label>
-        Ordina
+        <span data-i18n="watchlist.sort">Ordina</span>
         <select id="sort">
-          <option value="name">Nome</option>
-          <option value="id">Blueprint ID</option>
-          <option value="target">Prezzo max</option>
-          <option value="under">Sotto soglia prima</option>
+          <option value="name" data-i18n="watchlist.sortName">Nome</option>
+          <option value="id" data-i18n="watchlist.sortId">Blueprint ID</option>
+          <option value="target" data-i18n="watchlist.sortTarget">Prezzo max</option>
+          <option value="under" data-i18n="watchlist.sortUnder">Sotto soglia prima</option>
         </select>
       </label>
       <div id="filters">
-        <label class="filter-chip"><input type="checkbox" id="filterUnder"> Solo sotto soglia</label>
-        <label class="filter-chip"><input type="checkbox" id="filterZero" checked> Zero</label>
-        <label class="filter-chip"><input type="checkbox" id="filterNormal" checked> Normale</label>
-        <label class="filter-chip"><input type="checkbox" id="filterAuto"> Solo auto-cart</label>
+        <label class="filter-chip"><input type="checkbox" id="filterUnder"> <span data-i18n="watchlist.filterUnder">Solo sotto soglia</span></label>
+        <label class="filter-chip"><input type="checkbox" id="filterZero" checked> <span data-i18n="watchlist.filterZero">Zero</span></label>
+        <label class="filter-chip"><input type="checkbox" id="filterNormal" checked> <span data-i18n="watchlist.filterNormal">Normale</span></label>
+        <label class="filter-chip"><input type="checkbox" id="filterAuto"> <span data-i18n="watchlist.filterAuto">Solo auto-cart</span></label>
       </div>
     </div>
   </header>
 
   <main>
-    <div id="empty">Nessuna carta. Prova a modificare la ricerca.</div>
+    <div id="empty" data-i18n="watchlist.emptyDefault">Nessuna carta. Prova a modificare la ricerca.</div>
     <div id="grid"></div>
   </main>
 
   <div id="chartOverlay" aria-hidden="true">
     <div id="chartPanel">
       <div id="chartHeader">
-        <div id="chartTitle">Grafico prezzi</div>
-        <button type="button" id="chartClose" title="Chiudi">✕</button>
+        <div id="chartTitle" data-i18n="chart.title">Grafico prezzi</div>
+        <button type="button" id="chartClose" data-i18n-title="chart.close" title="Chiudi">✕</button>
       </div>
       <div id="chartRanges">
-        <button type="button" class="range-btn active" data-range="day">Giorno</button>
-        <button type="button" class="range-btn" data-range="week">Settimana</button>
-        <button type="button" class="range-btn" data-range="month">Mese</button>
+        <button type="button" class="range-btn active" data-range="day" data-i18n="chart.day">Giorno</button>
+        <button type="button" class="range-btn" data-range="week" data-i18n="chart.week">Settimana</button>
+        <button type="button" class="range-btn" data-range="month" data-i18n="chart.month">Mese</button>
       </div>
       <div id="chartStats"></div>
       <div id="chartLegend">
-        <span><span class="dot zero"></span>CT Zero</span>
-        <span><span class="dot normal"></span>Normale</span>
+        <span><span class="dot zero"></span><span data-i18n="channel.ctZero">CT Zero</span></span>
+        <span><span class="dot normal"></span><span data-i18n="channel.normal">Normale</span></span>
       </div>
-      <div id="chartEmpty">Nessun dato ancora. Aspetta i prossimi check.</div>
+      <div id="chartEmpty" data-i18n="chart.empty">Nessun dato ancora. Aspetta i prossimi check.</div>
       <div id="chartCanvasWrap">
         <canvas id="chartCanvas" width="680" height="260"></canvas>
       </div>
     </div>
   </div>
 
-  <script src="watchlist.js"></script>
+  <script type="module" src="watchlist.js"></script>
 </body>
 </html>

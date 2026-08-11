@@ -461,28 +461,52 @@
       margin: 0 0 6px;
       line-height: 1.35;
     }
+    #localeRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 9px 10px;
+    }
+    #localeRow label {
+      font-size: 0.82em;
+      font-weight: 600;
+      color: #555;
+      white-space: nowrap;
+    }
+    #localeSelect {
+      flex: 1;
+      padding: 7px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9em;
+      background: #fff;
+    }
   </style>
 </head>
 <body>
-  <h3>Price Alert</h3>
+  <h3 data-i18n="app.title">Price Alert</h3>
 
   <div id="chartOverlay" aria-hidden="true">
     <div id="chartPanel">
       <div id="chartHeader">
-        <div id="chartTitle">Grafico prezzi</div>
-        <button type="button" id="chartClose" title="Chiudi">✕</button>
+        <div id="chartTitle" data-i18n="chart.title">Grafico prezzi</div>
+        <button type="button" id="chartClose" data-i18n-title="chart.close" title="Chiudi">✕</button>
       </div>
       <div id="chartRanges">
-        <button type="button" class="range-btn active" data-range="day">Giorno</button>
-        <button type="button" class="range-btn" data-range="week">Settimana</button>
-        <button type="button" class="range-btn" data-range="month">Mese</button>
+        <button type="button" class="range-btn active" data-range="day" data-i18n="chart.day">Giorno</button>
+        <button type="button" class="range-btn" data-range="week" data-i18n="chart.week">Settimana</button>
+        <button type="button" class="range-btn" data-range="month" data-i18n="chart.month">Mese</button>
       </div>
       <div id="chartStats"></div>
       <div id="chartLegend">
-        <span><span class="dot zero"></span>CT Zero</span>
-        <span><span class="dot normal"></span>Normale</span>
+        <span><span class="dot zero"></span><span data-i18n="channel.ctZero">CT Zero</span></span>
+        <span><span class="dot normal"></span><span data-i18n="channel.normal">Normale</span></span>
       </div>
-      <div id="chartEmpty">Nessun dato ancora. Aspetta i prossimi check.</div>
+      <div id="chartEmpty" data-i18n="chart.empty">Nessun dato ancora. Aspetta i prossimi check.</div>
       <div id="chartCanvasWrap">
         <canvas id="chartCanvas" width="340" height="180"></canvas>
       </div>
@@ -490,48 +514,48 @@
   </div>
 
   <div id="timer-box">
-    Prossimo check: <span id="countdown">--:--</span>
+    <span data-i18n="timer.nextCheck">Prossimo check:</span> <span id="countdown">--:--</span>
   </div>
   <div id="status-box"></div>
 
   <nav class="tab-bar" role="tablist">
-    <button type="button" class="tab-btn active" role="tab" data-tab="carte" aria-selected="true">Carte</button>
+    <button type="button" class="tab-btn active" role="tab" data-tab="carte" aria-selected="true"><span data-i18n="tabs.cards">Carte</span></button>
     <button type="button" class="tab-btn" role="tab" data-tab="archivio" aria-selected="false">
-      Archivio
+      <span data-i18n="tabs.archive">Archivio</span>
       <span id="archiveTabBadge" class="tab-badge">0</span>
     </button>
-    <button type="button" class="tab-btn" role="tab" data-tab="impostazioni" aria-selected="false">Impostazioni</button>
+    <button type="button" class="tab-btn" role="tab" data-tab="impostazioni" aria-selected="false"><span data-i18n="tabs.settings">Impostazioni</span></button>
   </nav>
 
   <!-- Tab: Carte -->
   <div id="panel-carte" class="tab-panel active" role="tabpanel">
     <div id="tokenBanner">
-      <span>Manca l’API token per monitorare i prezzi.</span>
-      <button type="button" id="goToSettingsBtn">Impostazioni</button>
+      <span data-i18n="banner.missingToken">Manca l’API token per monitorare i prezzi.</span>
+      <button type="button" id="goToSettingsBtn" data-i18n="banner.goSettings">Impostazioni</button>
     </div>
 
     <div class="section">
       <div class="section-label list-header">
-        <span>Carte monitorate</span>
-        <button type="button" id="openWatchlistBtn" title="Apri vista a tutta pagina con ricerca">Espandi</button>
+        <span data-i18n="list.monitored">Carte monitorate</span>
+        <button type="button" id="openWatchlistBtn" data-i18n="list.expand" data-i18n-title="list.expandTitle" title="Apri vista a tutta pagina con ricerca">Espandi</button>
       </div>
       <div id="list"></div>
     </div>
 
     <details id="addCardDetails" class="collapsible" data-panel="addCardPanelOpen">
-      <summary>Aggiungi carta</summary>
+      <summary data-i18n="add.summary">Aggiungi carta</summary>
       <div class="input-group collapsible-body">
-        <button type="button" id="fillFromPageBtn" title="Legge nome e Blueprint ID dalla scheda CardTrader aperta">Dalla pagina CT</button>
-        <input type="text" id="cardLabel" placeholder="Nome / label (opzionale)">
-        <input type="number" id="blueprintId" placeholder="Blueprint ID (es. 400910)">
-        <input type="number" id="targetPrice" step="0.01" min="0" placeholder="Prezzo Max (€) — resta di default">
-        <div class="section-label" style="margin: 2px 0 0;">Cosa controllare</div>
+        <button type="button" id="fillFromPageBtn" data-i18n="add.fromPage" data-i18n-title="add.fromPageTitle" title="Legge nome e Blueprint ID dalla scheda CardTrader aperta">Dalla pagina CT</button>
+        <input type="text" id="cardLabel" data-i18n-placeholder="add.labelPlaceholder" placeholder="Nome / label (opzionale)">
+        <input type="number" id="blueprintId" data-i18n-placeholder="add.blueprintPlaceholder" placeholder="Blueprint ID (es. 400910)">
+        <input type="number" id="targetPrice" step="0.01" min="0" data-i18n-placeholder="add.pricePlaceholder" placeholder="Prezzo Max (€) — resta di default">
+        <div class="section-label" style="margin: 2px 0 0;" data-i18n="add.whatToCheck">Cosa controllare</div>
         <div class="checks">
-          <label class="check"><input type="checkbox" id="watchZero" checked> CT Zero</label>
-          <label class="check"><input type="checkbox" id="watchNormal"> Normale (spedizione diretta)</label>
+          <label class="check"><input type="checkbox" id="watchZero" checked> <span data-i18n="add.watchZero">CT Zero</span></label>
+          <label class="check"><input type="checkbox" id="watchNormal"> <span data-i18n="add.watchNormal">Normale (spedizione diretta)</span></label>
         </div>
-        <label class="check"><input type="checkbox" id="autoCart" checked> Auto-cart se sotto soglia</label>
-        <button type="button" id="addBtn">Aggiungi alla lista</button>
+        <label class="check"><input type="checkbox" id="autoCart" checked> <span data-i18n="add.autoCart">Auto-cart se sotto soglia</span></label>
+        <button type="button" id="addBtn" data-i18n="add.submit">Aggiungi alla lista</button>
       </div>
     </details>
   </div>
@@ -539,73 +563,82 @@
   <!-- Tab: Archivio -->
   <div id="panel-archivio" class="tab-panel" role="tabpanel">
     <div id="cartArchiveHeader">
-      <button type="button" id="clearArchiveBtn" title="Svuota archivio">Svuota</button>
+      <button type="button" id="clearArchiveBtn" data-i18n="archive.clear" data-i18n-title="archive.clearTitle" title="Svuota archivio">Svuota</button>
     </div>
     <div id="cartArchiveList"></div>
     <div id="cartArchiveTotal">
-      <span><span id="archiveCount">0</span> carte · <span id="archiveQty">0</span> pezzi</span>
-      <span>Totale: <b id="archiveSpend">€0.00</b></span>
+      <span><span id="archiveCount">0</span> <span data-i18n="archive.cards">carte</span> · <span id="archiveQty">0</span> <span data-i18n="archive.pieces">pezzi</span></span>
+      <span><span data-i18n="archive.total">Totale:</span> <b id="archiveSpend">€0.00</b></span>
     </div>
   </div>
 
   <!-- Tab: Impostazioni -->
   <div id="panel-impostazioni" class="tab-panel" role="tabpanel">
+    <div id="localeRow">
+      <label for="localeSelect" data-i18n="settings.language">Lingua</label>
+      <select id="localeSelect">
+        <option value="it">Italiano</option>
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+
     <details id="tokenDetails" class="collapsible" data-panel="tokenPanelOpen">
-      <summary>API Token</summary>
+      <summary data-i18n="settings.apiToken">API Token</summary>
       <div class="input-group collapsible-body">
-        <input type="text" id="apiToken" placeholder="Il tuo API Token" autocomplete="off">
-        <button type="button" id="saveTokenBtn">Salva token</button>
+        <input type="text" id="apiToken" data-i18n-placeholder="settings.tokenPlaceholder" placeholder="Il tuo API Token" autocomplete="off">
+        <button type="button" id="saveTokenBtn" data-i18n="settings.saveToken">Salva token</button>
       </div>
     </details>
 
     <details id="pollDetails" class="collapsible" data-panel="pollPanelOpen">
-      <summary>Intervallo polling (1–5 min)</summary>
+      <summary data-i18n="settings.pollInterval">Intervallo polling (1–5 min)</summary>
       <div class="collapsible-body">
         <div class="row">
           <input type="number" id="pollMinutes" min="1" max="5" step="1" value="2">
-          <button type="button" id="savePollBtn">Applica</button>
+          <button type="button" id="savePollBtn" data-i18n="settings.apply">Applica</button>
         </div>
       </div>
     </details>
 
     <details id="addrDetails" class="collapsible" data-panel="addrPanelOpen">
-      <summary>Indirizzo cart</summary>
+      <summary data-i18n="settings.cartAddress">Indirizzo cart</summary>
       <div class="input-group collapsible-body">
-        <p class="hint">Consigliato per l’auto-cart (usato in /cart/add).</p>
-        <input type="text" id="addrName" placeholder="Nome">
-        <input type="text" id="addrStreet" placeholder="Via">
+        <p class="hint" data-i18n="settings.addrHint">Consigliato per l’auto-cart (usato in /cart/add).</p>
+        <input type="text" id="addrName" data-i18n-placeholder="settings.addrName" placeholder="Nome">
+        <input type="text" id="addrStreet" data-i18n-placeholder="settings.addrStreet" placeholder="Via">
         <div class="row">
-          <input type="text" id="addrZip" placeholder="CAP">
-          <input type="text" id="addrCity" placeholder="Città">
+          <input type="text" id="addrZip" data-i18n-placeholder="settings.addrZip" placeholder="CAP">
+          <input type="text" id="addrCity" data-i18n-placeholder="settings.addrCity" placeholder="Città">
         </div>
         <div class="row">
-          <input type="text" id="addrState" placeholder="Provincia (es. FI)">
-          <input type="text" id="addrCountry" placeholder="Paese (es. IT)" maxlength="2">
+          <input type="text" id="addrState" data-i18n-placeholder="settings.addrState" placeholder="Provincia (es. FI)">
+          <input type="text" id="addrCountry" data-i18n-placeholder="settings.addrCountry" placeholder="Paese (es. IT)" maxlength="2">
         </div>
-        <button type="button" id="saveAddrBtn">Salva indirizzo</button>
+        <button type="button" id="saveAddrBtn" data-i18n="settings.saveAddress">Salva indirizzo</button>
       </div>
     </details>
 
     <details id="soundDetails" class="collapsible" data-panel="soundPanelOpen">
-      <summary>Notifiche</summary>
+      <summary data-i18n="settings.notifications">Notifiche</summary>
       <div class="input-group collapsible-body">
-        <label class="check"><input type="checkbox" id="alertSound" checked> Suono all'alert</label>
-        <button type="button" id="testSoundBtn">Prova suono</button>
+        <label class="check"><input type="checkbox" id="alertSound" checked> <span data-i18n="settings.alertSound">Suono all'alert</span></label>
+        <button type="button" id="testSoundBtn" data-i18n="settings.testSound">Prova suono</button>
       </div>
     </details>
 
     <details id="debugDetails" class="collapsible" data-panel="debugPanelOpen">
-      <summary>Debug</summary>
+      <summary data-i18n="settings.debug">Debug</summary>
       <div class="input-group collapsible-body">
-        <label class="check"><input type="checkbox" id="debugMode"> Modalità debug API</label>
+        <label class="check"><input type="checkbox" id="debugMode"> <span data-i18n="settings.debugMode">Modalità debug API</span></label>
         <div id="debugPanel">
-          <button type="button" id="runCheckBtn">Esegui check ora</button>
-          <button type="button" id="openDebugBtn">Apri log request/response</button>
+          <button type="button" id="runCheckBtn" data-i18n="settings.runCheck">Esegui check ora</button>
+          <button type="button" id="openDebugBtn" data-i18n="settings.openDebugLog">Apri log request/response</button>
         </div>
       </div>
     </details>
   </div>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

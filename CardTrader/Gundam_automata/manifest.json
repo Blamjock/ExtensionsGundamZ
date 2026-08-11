@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CardTrader Price Alert",
-  "version": "2.2",
+  "version": "2.3",
   "description": "Alert Zero/Normale con campanella; min/now; auto-cart; archivio; debug.",
   "permissions": ["storage", "alarms", "notifications", "offscreen", "activeTab", "scripting"],
   "host_permissions": [
@@ -15,7 +15,8 @@
     }
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
