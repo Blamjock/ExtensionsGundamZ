@@ -257,9 +257,6 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     if (existing >= 0) list[existing] = entry;
     else list.push(entry);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e9330f'},body:JSON.stringify({sessionId:'e9330f',runId:'popup-save',hypothesisId:'D',location:'popup.js:addBtn',message:'popup writing watchList',data:{bId,existing:existing>=0,lastSeenZero:entry.lastSeenZero,lastSeenZeroAt:entry.lastSeenZeroAt,minZero:entry.minZero,lastAlertPrice:entry.lastAlertPrice},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     await chrome.storage.local.set({
         token,
         watchList: list,
