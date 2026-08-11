@@ -63,7 +63,9 @@ Paddle / Lemon Squeezy → il backend:
 
 ## Flusso checkout
 
-1. Estensione apre `CHECKOUT_URL` (tab).
-2. Utente paga sul MoR → riceve license key via email.
-3. Incolla la key in Impostazioni → `activate`.
+1. Estensione apre `CHECKOUT_URL` (tab) — pagina landing in [`web/pricing.html`](../web/pricing.html).
+2. Utente si registra (nome/email), paga con **PayPal** → il backend (webhook / `orderApiUrl`) crea la licenza e invia la **license key via email**.
+3. Incolla la key in Impostazioni → `activate` (oppure verifica dalla stessa landing se `licenseApiBase` è configurato).
 4. Cache locale aggiornata; UI passa a Pro.
+
+Nella landing, configura in cima allo script: `paypalClientId`, `orderApiUrl`, `licenseApiBase`.

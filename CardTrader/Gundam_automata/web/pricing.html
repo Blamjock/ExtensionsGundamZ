@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crometium TCG — Passa a Pro</title>
+  <meta name="description" content="Monitora i prezzi CardTrader. Confronta Free e Pro, paga con PayPal e attiva la license key." />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0f1720;
+      --navy: #1a2836;
+      --slate: #2c3e50;
+      --sky: #3498db;
+      --sky-bright: #5dade2;
+      --alert: #e74c3c;
+      --mint: #1abc9c;
+      --paper: #e8eef3;
+      --muted: #7f8c9a;
+      --line: rgba(255, 255, 255, 0.12);
+      --radius: 14px;
+      --font-display: "Syne", sans-serif;
+      --font-body: "Figtree", sans-serif;
+      --shadow: 0 24px 60px rgba(15, 23, 32, 0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--sky); }
+    img { max-width: 100%; display: block; }
+    button, input { font: inherit; }
+
+    .wrap {
+      width: min(1100px, calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+
+    /* —— Nav —— */
+    .topnav {
+      position: absolute;
+      inset: 0 0 auto;
+      z-index: 5;
+      padding: 1.1rem 0;
+    }
+    .topnav .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: #fff;
+      text-decoration: none;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+    .brand-mark img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.78);
+      text-decoration: none;
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-links a:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* —— Hero —— */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      color: #fff;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 20%, rgba(52, 152, 219, 0.35), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 10% 80%, rgba(26, 188, 156, 0.18), transparent 50%),
+        linear-gradient(160deg, #0b1219 0%, var(--navy) 45%, #243447 100%);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 70% 60% at 60% 40%, #000 20%, transparent 75%);
+      pointer-events: none;
+      animation: gridDrift 28s linear infinite;
+    }
+    @keyframes gridDrift {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-48px, -48px, 0); }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 2rem;
+      align-items: end;
+      padding: 6.5rem 0 4.5rem;
+    }
+    .hero-copy { max-width: 34rem; }
+    .hero-brand {
+      margin: 0 0 1rem;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(2.6rem, 6vw, 4.4rem);
+      line-height: 0.95;
+      letter-spacing: -0.045em;
+      animation: riseIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .hero-title {
+      margin: 0 0 0.85rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+      letter-spacing: -0.03em;
+      color: var(--sky-bright);
+      animation: riseIn 0.8s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .hero-lead {
+      margin: 0 0 1.6rem;
+      font-size: 1.08rem;
+      color: rgba(236, 240, 241, 0.82);
+      max-width: 32ch;
+      animation: riseIn 0.8s 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      animation: riseIn 0.8s 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.85rem 1.35rem;
+      border-radius: 999px;
+      border: none;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: var(--sky);
+      color: #fff;
+      box-shadow: 0 10px 28px rgba(52, 152, 219, 0.35);
+    }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-ghost {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+    }
+    .btn-ghost:hover { background: rgba(255, 255, 255, 0.06); }
+
+    .hero-visual {
+      position: relative;
+      justify-self: end;
+      width: min(100%, 420px);
+      aspect-ratio: 1;
+      animation: floatSoft 6s ease-in-out infinite;
+    }
+    .hero-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 30px 50px rgba(0, 0, 0, 0.45));
+    }
+    .pulse-ring {
+      position: absolute;
+      inset: 12%;
+      border-radius: 50%;
+      border: 1px solid rgba(52, 152, 219, 0.35);
+      animation: pulseRing 3.2s ease-out infinite;
+      pointer-events: none;
+    }
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatSoft {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.92); opacity: 0.7; }
+      100% { transform: scale(1.18); opacity: 0; }
+    }
+
+    /* —— Sections —— */
+    section { padding: 4.5rem 0; }
+    .section-kicker {
+      margin: 0 0 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sky);
+    }
+    .section-title {
+      margin: 0 0 0.55rem;
+      font-family: var(--font-display);
+      font-size: clamp(1.7rem, 3vw, 2.35rem);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+    .section-lead {
+      margin: 0 0 2rem;
+      color: var(--muted);
+      max-width: 48ch;
+    }
+
+    /* —— Compare —— */
+    .compare {
+      background:
+        linear-gradient(180deg, #dfe7ee 0%, var(--paper) 100%);
+    }
+    .compare-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: 0 1px 0 rgba(15, 23, 32, 0.06), var(--shadow);
+    }
+    .compare-table th,
+    .compare-table td {
+      padding: 0.95rem 1.1rem;
+      text-align: left;
+      border-bottom: 1px solid #edf1f5;
+      vertical-align: middle;
+    }
+    .compare-table thead th {
+      background: var(--navy);
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .compare-table thead th:first-child { width: 38%; }
+    .compare-table thead th.pro-col {
+      background: linear-gradient(135deg, #1f6ea5, var(--sky));
+    }
+    .compare-table tbody tr:last-child td { border-bottom: none; }
+    .compare-table tbody tr:hover td { background: #f7fafc; }
+    .feature-name { font-weight: 600; color: var(--slate); }
+    .cell-free { color: var(--muted); }
+    .cell-pro { color: #0e6655; font-weight: 600; }
+    .check { color: var(--mint); font-weight: 700; }
+    .cross { color: #b0b8c0; }
+
+    .price-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.75rem;
+    }
+    .plan {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 1.4rem 1.35rem;
+      border-radius: var(--radius);
+      background: #fff;
+      border: 1px solid #d5dee7;
+    }
+    .plan.featured {
+      border-color: transparent;
+      background: linear-gradient(145deg, var(--navy), #2a455c);
+      color: #fff;
+      box-shadow: var(--shadow);
+      transform: translateY(-4px);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -0.65rem;
+      left: 1rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      background: var(--mint);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .plan-name {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+    .plan-price {
+      margin: 0.35rem 0 0.25rem;
+      font-family: var(--font-display);
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .plan-price span {
+      font-size: 0.95rem;
+      font-weight: 600;
+      opacity: 0.75;
+      letter-spacing: 0;
+    }
+    .plan-price-was {
+      margin: 0;
+      font-size: 0.95rem;
+      opacity: 0.65;
+    }
+    .plan-price-was s {
+      text-decoration: line-through;
+      text-decoration-thickness: 1.5px;
+    }
+    .plan.featured .plan-price-was { opacity: 0.75; }
+    .discount-pill {
+      display: inline-block;
+      margin-left: 0.35rem;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      background: var(--alert);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      vertical-align: middle;
+    }
+    .plan.featured .discount-pill {
+      background: #fff;
+      color: var(--alert);
+    }
+    .plan-equiv {
+      margin: 0.35rem 0 0.55rem;
+      font-size: 0.85rem;
+      opacity: 0.75;
+    }
+    .plan-note {
+      margin: 0 0 1rem;
+      font-size: 0.92rem;
+      opacity: 0.8;
+      flex: 1;
+    }
+    .plan .btn {
+      margin-top: auto;
+      width: 100%;
+    }
+    .plan.featured .btn {
+      background: #fff;
+      color: var(--navy);
+    }
+    .plan:not(.featured) .btn {
+      background: var(--navy);
+      color: #fff;
+    }
+    .plan:not(.featured) .btn:hover { background: #243447; }
+
+    .plan-picker {
+      display: grid;
+      gap: 0.65rem;
+      margin-bottom: 1.1rem;
+    }
+    .plan-option {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid #cfd8e1;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .plan-option:hover { border-color: var(--sky-bright); }
+    .plan-option:has(input:checked) {
+      border-color: var(--sky);
+      background: #eef6fb;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    }
+    .plan-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .plan-option .radio {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid #aeb8c2;
+      display: grid;
+      place-items: center;
+    }
+    .plan-option:has(input:checked) .radio {
+      border-color: var(--sky);
+    }
+    .plan-option:has(input:checked) .radio::after {
+      content: "";
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--sky);
+    }
+    .plan-option .opt-title {
+      font-weight: 700;
+      color: var(--slate);
+      font-size: 0.95rem;
+    }
+    .plan-option .opt-sub {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .plan-option .opt-price {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--navy);
+      white-space: nowrap;
+      text-align: right;
+      line-height: 1.2;
+    }
+    .plan-option .opt-price small {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+    .plan-option .opt-tag {
+      display: inline-block;
+      margin-left: 0.35rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: rgba(26, 188, 156, 0.15);
+      color: #0e6655;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    .order-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.85rem 0;
+      margin-bottom: 1rem;
+      border-top: 1px dashed #cfd8e1;
+      border-bottom: 1px dashed #cfd8e1;
+      font-weight: 600;
+    }
+    .order-summary strong {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      color: var(--navy);
+      text-align: right;
+      line-height: 1.2;
+    }
+    .order-summary .sum-was {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+    .order-summary .sum-disc {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--alert);
+    }
+
+    /* —— Checkout —— */
+    .checkout { background: #fff; }
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    .panel {
+      border: 1px solid #d9e2ea;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      background: #fbfcfd;
+    }
+    .panel h3 {
+      margin: 0 0 0.35rem;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+    .panel p.hint {
+      margin: 0 0 1.2rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .field { margin-bottom: 0.95rem; }
+    .field label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--slate);
+    }
+    .field input {
+      width: 100%;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid #cfd8e1;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus {
+      border-color: var(--sky);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+    .field-error {
+      display: none;
+      margin-top: 0.35rem;
+      color: var(--alert);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .field.invalid .field-error { display: block; }
+    .field.invalid input { border-color: var(--alert); }
+
+    #paypal-button-container { min-height: 48px; }
+    #paypal-button-container.disabled {
+      opacity: 0.45;
+      pointer-events: none;
+      filter: grayscale(0.4);
+    }
+    .paypal-gate {
+      margin: 0 0 0.85rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .paypal-gate.ready { color: #0e6655; font-weight: 600; }
+
+    .status-box {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.9rem 1rem;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .status-box.show { display: block; }
+    .status-box.ok {
+      background: #e8f8f5;
+      color: #0e6655;
+      border: 1px solid #a3e4d7;
+    }
+    .status-box.err {
+      background: #fdecea;
+      color: #922b21;
+      border: 1px solid #f5b7b1;
+    }
+    .status-box.warn {
+      background: #fef9e7;
+      color: #7d6608;
+      border: 1px solid #f9e79f;
+    }
+
+    .steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.85rem;
+    }
+    .steps li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.75rem;
+      align-items: start;
+    }
+    .step-num {
+      width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+    }
+    .steps strong { display: block; margin-bottom: 0.15rem; }
+    .steps span { color: var(--muted); font-size: 0.92rem; }
+
+    /* —— Activate —— */
+    .activate {
+      background:
+        radial-gradient(ellipse 60% 50% at 100% 0%, rgba(52, 152, 219, 0.12), transparent 55%),
+        var(--paper);
+    }
+    .activate-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .activate .panel { background: #fff; }
+    .btn-block { width: 100%; margin-top: 0.25rem; }
+    .btn-dark {
+      background: var(--navy);
+      color: #fff;
+    }
+    .btn-dark:hover { background: #243447; }
+    .ext-note {
+      margin: 1rem 0 0;
+      padding: 0.85rem 1rem;
+      border-left: 3px solid var(--sky);
+      background: #eef6fb;
+      font-size: 0.9rem;
+      color: var(--slate);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.88em;
+      background: rgba(15, 23, 32, 0.06);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+
+    /* —— Footer —— */
+    footer {
+      padding: 2rem 0 2.5rem;
+      background: var(--ink);
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.88rem;
+    }
+    footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    footer strong { color: #fff; font-family: var(--font-display); }
+
+    @media (max-width: 860px) {
+      .hero-inner,
+      .checkout-grid,
+      .activate-grid {
+        grid-template-columns: 1fr;
+      }
+      .price-strip {
+        grid-template-columns: 1fr;
+      }
+      .plan.featured { transform: none; }
+      .hero-visual {
+        justify-self: center;
+        width: min(70%, 280px);
+        order: -1;
+        margin-top: 1rem;
+      }
+      .hero-inner { padding-top: 5.5rem; padding-bottom: 3rem; }
+      .compare-table { font-size: 0.9rem; }
+      .compare-table th,
+      .compare-table td { padding: 0.75rem 0.7rem; }
+    }
+
+    @media (max-width: 520px) {
+      .wrap { width: min(100% - 1.5rem, 1100px); }
+      .nav-links a:not(.nav-cta) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="wrap">
+      <a class="brand-mark" href="#top">
+        <img src="icon-128.png" alt="" width="36" height="36" />
+        Crometium TCG
+      </a>
+      <nav class="nav-links" aria-label="Sezioni">
+        <a href="#confronta">Confronta</a>
+        <a href="#piani">Prezzi</a>
+        <a href="#acquista">Acquista</a>
+        <a class="nav-cta" href="#attiva">Attiva chiave</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Introduzione">
+      <div class="wrap hero-inner">
+        <div class="hero-copy">
+          <p class="hero-brand">Crometium TCG</p>
+          <h1 class="hero-title">Alert prezzi CardTrader, senza perdere il sniper timing.</h1>
+          <p class="hero-lead">
+            Free per iniziare. Pro per scala, velocità e auto-cart. Paga con PayPal e ricevi la license key via email.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#piani">Scegli abbonamento Pro</a>
+            <a class="btn btn-ghost" href="#confronta">Vedi differenze</a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <span class="pulse-ring"></span>
+          <span class="pulse-ring" style="animation-delay: 1.1s"></span>
+          <img src="icon-512.png" alt="" width="420" height="420" />
+        </div>
+      </div>
+    </section>
+
+    <section class="compare" id="confronta">
+      <div class="wrap">
+        <p class="section-kicker">Piani</p>
+        <h2 class="section-title">Free vs Pro, chiaro in un colpo d’occhio</h2>
+        <p class="section-lead">
+          Free completa il loop aggiungi → check → alert. Pro sblocca scala, dual-channel, automazione e grafici lunghi.
+        </p>
+
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Funzionalità</th>
+              <th>Free</th>
+              <th class="pro-col">Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feature-name">Watchlist</td>
+              <td class="cell-free">max 5 carte</td>
+              <td class="cell-pro">fino a 100 carte</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Canali CT Zero / Normale</td>
+              <td class="cell-free">uno solo alla volta</td>
+              <td class="cell-pro">entrambi insieme</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Intervallo polling</td>
+              <td class="cell-free">fisso 5 minuti</td>
+              <td class="cell-pro">da 1 a 5 minuti</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Alert</td>
+              <td class="cell-free">notifica browser</td>
+              <td class="cell-pro">notifica + suono</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Auto-cart</td>
+              <td class="cell-free"><span class="cross">—</span></td>
+              <td class="cell-pro"><span class="check">✓</span> abilitato</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Grafici storico</td>
+              <td class="cell-free">solo Giorno</td>
+              <td class="cell-pro">Giorno / Settimana / Mese</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Watchlist a schermo intero</td>
+              <td class="cell-free"><span class="cross">—</span></td>
+              <td class="cell-pro"><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature-name">Debug API</td>
+              <td class="cell-free"><span class="cross">—</span></td>
+              <td class="cell-pro"><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature-name">Lingue IT / EN / ES</td>
+              <td class="cell-free"><span class="check">✓</span></td>
+              <td class="cell-pro"><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature-name">Trial all’installazione</td>
+              <td class="cell-free" colspan="2" style="color:var(--slate)">15 giorni Pro inclusi, poi Free o license key</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+    </section>
+
+    <section class="compare" id="piani">
+      <div class="wrap">
+        <p class="section-kicker">Abbonamenti Pro</p>
+        <h2 class="section-title">Mensile, 3 mesi o 1 anno</h2>
+        <p class="section-lead">
+          Stesse feature Pro su tutti i piani. Offerta di lancio sull’annuale: listino barrato + sconto. Paghi con PayPal e ricevi la key via email.
+        </p>
+
+        <div class="price-strip" id="price-cards">
+          <!-- riempito da CONFIG -->
+        </div>
+      </div>
+    </section>
+
+    <section class="checkout" id="acquista">
+      <div class="wrap">
+        <p class="section-kicker">Checkout</p>
+        <h2 class="section-title">Registrati e paga con PayPal</h2>
+        <p class="section-lead">
+          Scegli la durata, inserisci i dati e completa il pagamento: la license key arriva via email.
+        </p>
+
+        <div class="checkout-grid">
+          <div class="panel">
+            <h3>Abbonamento e dati</h3>
+            <p class="hint">Useremo l’email solo per consegnare la license key e assistenza sull’ordine.</p>
+
+            <form id="checkout-form" novalidate>
+              <fieldset class="plan-picker" id="plan-picker">
+                <legend class="field" style="margin-bottom:0.5rem;padding:0;border:0">
+                  <span style="font-size:0.85rem;font-weight:600;color:var(--slate)">Durata abbonamento</span>
+                </legend>
+                <!-- opzioni riempite da CONFIG -->
+              </fieldset>
+
+              <div class="field" id="field-name">
+                <label for="buyer-name">Nome e cognome</label>
+                <input id="buyer-name" name="name" type="text" autocomplete="name" required placeholder="Mario Rossi" />
+                <div class="field-error">Inserisci il nome</div>
+              </div>
+              <div class="field" id="field-email">
+                <label for="buyer-email">Email</label>
+                <input id="buyer-email" name="email" type="email" autocomplete="email" required placeholder="tu@email.com" />
+                <div class="field-error">Inserisci un’email valida</div>
+              </div>
+              <div class="field" id="field-email2">
+                <label for="buyer-email2">Conferma email</label>
+                <input id="buyer-email2" name="email2" type="email" autocomplete="email" required placeholder="Ripeti l’email" />
+                <div class="field-error">Le email non coincidono</div>
+              </div>
+
+              <div class="order-summary">
+                <span id="summary-label">Crometium TCG Pro — 12 mesi</span>
+                <strong id="summary-amount">€24,00</strong>
+              </div>
+
+              <p class="paypal-gate" id="paypal-gate">Compila il form per abilitare PayPal.</p>
+              <div id="paypal-button-container" class="disabled"></div>
+              <div id="checkout-status" class="status-box" role="status" aria-live="polite"></div>
+            </form>
+          </div>
+
+          <div>
+            <ol class="steps">
+              <li>
+                <span class="step-num">1</span>
+                <div>
+                  <strong>Registrati</strong>
+                  <span>Nome ed email dove ricevere la chiave.</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <div>
+                  <strong>Paga con PayPal</strong>
+                  <span>Checkout sicuro. Nessuna carta gestita da questa pagina.</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <div>
+                  <strong>Ricevi la key via email</strong>
+                  <span>Di solito entro pochi minuti dopo la conferma pagamento.</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">4</span>
+                <div>
+                  <strong>Attiva nell’estensione</strong>
+                  <span>Impostazioni → incolla la key → Attiva. Oppure usa il box qui sotto.</span>
+                </div>
+              </li>
+            </ol>
+            <p class="ext-note">
+              In sviluppo, senza PayPal Client ID configurato, puoi usare il pulsante di simulazione
+              (non genera una chiave reale). In produzione il backend crea la licenza dal webhook PayPal
+              e la invia all’email indicata.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="activate" id="attiva">
+      <div class="wrap">
+        <p class="section-kicker">Licenza</p>
+        <h2 class="section-title">Hai già una chiave? Attivala</h2>
+        <p class="section-lead">
+          Incolla la license key ricevuta via email. Preferibilmente attivala dal popup dell’estensione
+          (tab Impostazioni); qui sotto puoi verificare la key se l’API è configurata.
+        </p>
+
+        <div class="activate-grid">
+          <div class="panel">
+            <h3>Attiva license key</h3>
+            <p class="hint">Formato tipico: <code>XXXX-XXXX-XXXX</code></p>
+            <form id="activate-form" novalidate>
+              <div class="field" id="field-key">
+                <label for="license-key">License key</label>
+                <input id="license-key" name="licenseKey" type="text" autocomplete="off" spellcheck="false" required placeholder="PRO-…" />
+                <div class="field-error">Inserisci una license key</div>
+              </div>
+              <button type="submit" class="btn btn-dark btn-block">Verifica / attiva</button>
+              <div id="activate-status" class="status-box" role="status" aria-live="polite"></div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3>Nell’estensione Chrome</h3>
+            <p class="hint" style="margin-bottom:1rem">Il modo consigliato per sbloccare Pro sul browser:</p>
+            <ol class="steps">
+              <li>
+                <span class="step-num">1</span>
+                <div><strong>Apri Crometium TCG</strong><span>Clicca l’icona dell’estensione.</span></div>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <div><strong>Vai su Impostazioni</strong><span>Sezione licenza Pro.</span></div>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <div><strong>Incolla e Attiva</strong><span>Il badge passerà a Pro se la key è valida.</span></div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div><strong>Crometium TCG</strong> — price alerts per CardTrader</div>
+      <div id="footer-pricing">Pro · PayPal · key via email</div>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * Configurazione produzione — modifica questi valori prima del deploy.
+     *
+     * PREZZI: per alzare l’annuale in futuro riduci solo yearDiscountPercent
+     * (listino resta €44). Esempio: 45 → ~€24 | 30 → ~€30,80 | 0 → €44.
+     *
+     * PayPal: Dashboard → App & Credentials → Client ID (sandbox o live).
+     * licenseApiBase: stesso origin di LICENSE_API_BASE nell’estensione.
+     */
+    const CONFIG = {
+      paypalClientId: "", // es. "AXxx...sandbox" oppure Client ID live
+      currency: "EUR",
+      defaultPlanId: "year",
+
+      /** Prezzo mensile (€) */
+      monthPrice: 3,
+      /** Prezzo 3 mesi (€) */
+      threeMonthPrice: 8,
+      /** Listino annuale pieno — ancoraggio (€) */
+      yearListPrice: 44,
+      /**
+       * Sconto % sull’annuale (offerta di lancio).
+       * Cambia SOLO questo quando avrai più utenti (~2000) per alzare il netto.
+       * 45% di €44 ≈ €24,20
+       */
+      yearDiscountPercent: 45,
+
+      /** Backend che crea la licenza e invia la key via email dopo PayPal */
+      orderApiUrl: "", // es. "https://api.crometium.example/v1/checkout/paypal-capture"
+      /** Stesso base URL di licenseApi.js per activate */
+      licenseApiBase: "", // es. "https://api.crometium.example"
+      /** Se true e manca paypalClientId, mostra pulsante simulazione */
+      allowDevSimulate: true,
+
+      /** Popolato da buildPlans() */
+      plans: {}
+    };
+
+    function roundMoney(n) {
+      return Math.round(Number(n) * 100) / 100;
+    }
+
+    function formatEuro(n) {
+      return (
+        "€" +
+        roundMoney(n).toLocaleString("it-IT", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      );
+    }
+
+    function perMonthLabel(amount, months) {
+      const pm = roundMoney(amount / months);
+      return "≈ " + formatEuro(pm) + "/mese";
+    }
+
+    function buildPlans() {
+      const month = roundMoney(CONFIG.monthPrice);
+      const three = roundMoney(CONFIG.threeMonthPrice);
+      const list = roundMoney(CONFIG.yearListPrice);
+      const disc = Math.max(0, Math.min(100, Number(CONFIG.yearDiscountPercent) || 0));
+      const yearPaid = roundMoney(list * (1 - disc / 100));
+      const savedOnList = roundMoney(list - yearPaid);
+      const vsMonthlyYear = roundMoney(month * 12);
+
+      CONFIG.plans = {
+        month: {
+          id: "month",
+          name: "Mensile",
+          shortName: "Mensile",
+          label: "Crometium TCG Pro — 1 mese",
+          amount: month.toFixed(2),
+          displayAmount: formatEuro(month),
+          months: 1,
+          period: "/ mese",
+          equiv: "Flessibile, rinnovo ogni 30 giorni",
+          note: "Ideale per provare Pro oltre il trial senza impegno lungo.",
+          cta: "Scegli mensile",
+          optSub: "1 mese di Pro",
+          featured: false,
+          listPrice: null,
+          discountPercent: 0
+        },
+        "3m": {
+          id: "3m",
+          name: "3 mesi",
+          shortName: "3 mesi",
+          label: "Crometium TCG Pro — 3 mesi",
+          amount: three.toFixed(2),
+          displayAmount: formatEuro(three),
+          months: 3,
+          period: "/ 3 mesi",
+          equiv: perMonthLabel(three, 3) + " · vs " + formatEuro(month * 3) + " a mensili",
+          note: "Perfetto per un set, un deck o un evento in corso.",
+          cta: "Scegli 3 mesi",
+          optSub: perMonthLabel(three, 3),
+          featured: false,
+          listPrice: null,
+          discountPercent: 0
+        },
+        year: {
+          id: "year",
+          name: "1 anno",
+          shortName: "1 anno",
+          label: "Crometium TCG Pro — 12 mesi",
+          amount: yearPaid.toFixed(2),
+          displayAmount: formatEuro(yearPaid),
+          months: 12,
+          period: "/ anno",
+          equiv:
+            perMonthLabel(yearPaid, 12) +
+            " · offerta di lancio −" +
+            disc +
+            "%",
+          note:
+            "Listino " +
+            formatEuro(list) +
+            ", paghi " +
+            formatEuro(yearPaid) +
+            " (risparmi " +
+            formatEuro(savedOnList) +
+            "). License key annuale via email.",
+          cta: "Scegli 1 anno",
+          optSub: perMonthLabel(yearPaid, 12) + " · −" + disc + "%",
+          featured: true,
+          listPrice: list,
+          listDisplay: formatEuro(list),
+          discountPercent: disc,
+          savedDisplay: formatEuro(savedOnList),
+          vsMonthlyYear: vsMonthlyYear
+        }
+      };
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function renderPricingUI() {
+      const cards = document.getElementById("price-cards");
+      const picker = document.getElementById("plan-picker");
+      const order = ["month", "3m", "year"];
+
+      cards.innerHTML = order
+        .map((id) => {
+          const p = CONFIG.plans[id];
+          const was =
+            p.listPrice != null && p.discountPercent > 0
+              ? `<p class="plan-price-was"><s>${escapeHtml(p.listDisplay)}</s><span class="discount-pill">−${p.discountPercent}%</span></p>`
+              : "";
+          return `<article class="plan${p.featured ? " featured" : ""}">
+            ${p.featured ? '<span class="plan-badge">Consigliato</span>' : ""}
+            <h3 class="plan-name">${escapeHtml(p.name)}</h3>
+            ${was}
+            <p class="plan-price">${escapeHtml(p.displayAmount)} <span>${escapeHtml(p.period)}</span></p>
+            <p class="plan-equiv">${escapeHtml(p.equiv)}</p>
+            <p class="plan-note">${escapeHtml(p.note)}</p>
+            <a class="btn" href="#acquista" data-select-plan="${p.id}">${escapeHtml(p.cta)}</a>
+          </article>`;
+        })
+        .join("");
+
+      const legend = picker.querySelector("legend");
+      picker.querySelectorAll(".plan-option").forEach((el) => el.remove());
+
+      order.forEach((id) => {
+        const p = CONFIG.plans[id];
+        const label = document.createElement("label");
+        label.className = "plan-option";
+        const priceHtml =
+          p.listPrice != null && p.discountPercent > 0
+            ? `<span class="opt-price"><small>${escapeHtml(p.listDisplay)}</small>${escapeHtml(p.displayAmount)}</span>`
+            : `<span class="opt-price">${escapeHtml(p.displayAmount)}</span>`;
+        label.innerHTML = `
+          <input type="radio" name="plan" value="${p.id}" ${id === CONFIG.defaultPlanId ? "checked" : ""} />
+          <span class="radio" aria-hidden="true"></span>
+          <span>
+            <span class="opt-title">${escapeHtml(p.shortName)}${p.featured ? ' <span class="opt-tag">Best</span>' : ""}</span>
+            <span class="opt-sub">${escapeHtml(p.optSub)}</span>
+          </span>
+          ${priceHtml}
+        `;
+        picker.appendChild(label);
+      });
+
+      if (legend && legend.parentNode === picker) {
+        picker.insertBefore(legend, picker.firstChild);
+      }
+
+      const footer = document.getElementById("footer-pricing");
+      const y = CONFIG.plans.year;
+      footer.textContent =
+        "Pro da " +
+        CONFIG.plans.month.displayAmount +
+        "/mese · 3 mesi " +
+        CONFIG.plans["3m"].displayAmount +
+        " · anno " +
+        y.displayAmount +
+        " (−" +
+        y.discountPercent +
+        "% su " +
+        y.listDisplay +
+        ") · PayPal · key via email";
+
+      cards.querySelectorAll("[data-select-plan]").forEach((el) => {
+        el.addEventListener("click", () => selectPlan(el.getAttribute("data-select-plan")));
+      });
+    }
+
+    buildPlans();
+
+    const form = document.getElementById("checkout-form");
+    const nameInput = document.getElementById("buyer-name");
+    const emailInput = document.getElementById("buyer-email");
+    const email2Input = document.getElementById("buyer-email2");
+    const paypalBox = document.getElementById("paypal-button-container");
+    const paypalGate = document.getElementById("paypal-gate");
+    const checkoutStatus = document.getElementById("checkout-status");
+    const activateForm = document.getElementById("activate-form");
+    const keyInput = document.getElementById("license-key");
+    const activateStatus = document.getElementById("activate-status");
+    const summaryLabel = document.getElementById("summary-label");
+    const summaryAmount = document.getElementById("summary-amount");
+
+    function getSelectedPlan() {
+      const checked = form.querySelector('input[name="plan"]:checked');
+      const id = (checked && checked.value) || CONFIG.defaultPlanId;
+      return CONFIG.plans[id] || CONFIG.plans[CONFIG.defaultPlanId];
+    }
+
+    function selectPlan(planId) {
+      if (!CONFIG.plans[planId]) return;
+      const radio = form.querySelector('input[name="plan"][value="' + planId + '"]');
+      if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      updateOrderSummary();
+    }
+
+    function updateOrderSummary() {
+      const plan = getSelectedPlan();
+      summaryLabel.textContent = plan.label;
+      if (plan.listPrice != null && plan.discountPercent > 0) {
+        summaryAmount.innerHTML =
+          '<span class="sum-was">' +
+          escapeHtml(plan.listDisplay) +
+          "</span>" +
+          escapeHtml(plan.displayAmount) +
+          '<span class="sum-disc">Offerta di lancio −' +
+          plan.discountPercent +
+          "% (−" +
+          escapeHtml(plan.savedDisplay) +
+          ")</span>";
+      } else {
+        summaryAmount.textContent = plan.displayAmount;
+      }
+    }
+
+    function showStatus(el, type, message) {
+      el.className = "status-box show " + type;
+      el.textContent = message;
+    }
+
+    function clearStatus(el) {
+      el.className = "status-box";
+      el.textContent = "";
+    }
+
+    function isValidEmail(value) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+    }
+
+    function validateCheckoutFields() {
+      let ok = true;
+      const nameField = document.getElementById("field-name");
+      const emailField = document.getElementById("field-email");
+      const email2Field = document.getElementById("field-email2");
+
+      nameField.classList.toggle("invalid", !nameInput.value.trim());
+      if (!nameInput.value.trim()) ok = false;
+
+      const emailOk = isValidEmail(emailInput.value);
+      emailField.classList.toggle("invalid", !emailOk);
+      if (!emailOk) ok = false;
+
+      const match = emailOk && emailInput.value.trim().toLowerCase() === email2Input.value.trim().toLowerCase();
+      email2Field.classList.toggle("invalid", !match);
+      if (!match) ok = false;
+
+      return ok;
+    }
+
+    function buyerPayload() {
+      return {
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim().toLowerCase()
+      };
+    }
+
+    function setPaypalEnabled(enabled) {
+      paypalBox.classList.toggle("disabled", !enabled);
+      if (enabled) {
+        paypalGate.textContent = "PayPal pronto — completa il pagamento.";
+        paypalGate.classList.add("ready");
+      } else {
+        paypalGate.textContent = "Compila il form per abilitare PayPal.";
+        paypalGate.classList.remove("ready");
+      }
+    }
+
+    ["input", "change", "blur"].forEach((evt) => {
+      form.addEventListener(evt, () => {
+        const ok = validateCheckoutFields();
+        setPaypalEnabled(ok);
+        if (ok) clearStatus(checkoutStatus);
+      }, true);
+    });
+
+    form.addEventListener("submit", (e) => e.preventDefault());
+
+    async function notifyBackendAfterPayment(details) {
+      const plan = getSelectedPlan();
+      if (!CONFIG.orderApiUrl) {
+        return {
+          ok: true,
+          queued: false,
+          message:
+            "Pagamento registrato in pagina. Configura orderApiUrl sul server per generare e inviare la license key via email."
+        };
+      }
+      const res = await fetch(CONFIG.orderApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...buyerPayload(),
+          planId: plan.id,
+          plan: plan.label,
+          months: plan.months,
+          amount: plan.amount,
+          currency: CONFIG.currency,
+          listPrice: plan.listPrice,
+          discountPercent: plan.discountPercent,
+          paypal: details
+        })
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || "Errore server dopo il pagamento");
+      }
+      return res.json().catch(() => ({ ok: true }));
+    }
+
+    function renderDevSimulateButton() {
+      paypalBox.innerHTML = "";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-primary btn-block";
+      btn.textContent = "Simula pagamento PayPal (dev)";
+      btn.addEventListener("click", async () => {
+        if (!validateCheckoutFields()) {
+          setPaypalEnabled(false);
+          showStatus(checkoutStatus, "err", "Compila correttamente nome ed email.");
+          return;
+        }
+        const buyer = buyerPayload();
+        const plan = getSelectedPlan();
+        showStatus(
+          checkoutStatus,
+          "warn",
+          "Simulazione OK — " + plan.label + " per " + buyer.email + ". In produzione PayPal + webhook inviano la chiave reale."
+        );
+      });
+      paypalBox.appendChild(btn);
+    }
+
+    function loadPayPalSdk() {
+      return new Promise((resolve, reject) => {
+        if (window.paypal) {
+          resolve(window.paypal);
+          return;
+        }
+        const script = document.createElement("script");
+        script.src =
+          "https://www.paypal.com/sdk/js?client-id=" +
+          encodeURIComponent(CONFIG.paypalClientId) +
+          "&currency=" +
+          encodeURIComponent(CONFIG.currency) +
+          "&intent=capture";
+        script.onload = () => resolve(window.paypal);
+        script.onerror = () => reject(new Error("Impossibile caricare PayPal SDK"));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function initPayPal() {
+      if (!CONFIG.paypalClientId) {
+        if (CONFIG.allowDevSimulate) {
+          renderDevSimulateButton();
+          showStatus(
+            checkoutStatus,
+            "warn",
+            "PayPal Client ID non configurato: modalità sviluppo attiva."
+          );
+        } else {
+          paypalBox.innerHTML = "";
+          showStatus(
+            checkoutStatus,
+            "err",
+            "Checkout non disponibile: manca la configurazione PayPal."
+          );
+        }
+        return;
+      }
+
+      try {
+        const paypal = await loadPayPalSdk();
+        paypalBox.innerHTML = "";
+        paypal
+          .Buttons({
+            style: {
+              layout: "vertical",
+              color: "blue",
+              shape: "pill",
+              label: "pay"
+            },
+            onClick: (data, actions) => {
+              if (!validateCheckoutFields()) {
+                setPaypalEnabled(false);
+                showStatus(checkoutStatus, "err", "Compila nome ed email prima di pagare.");
+                return actions.reject();
+              }
+              return actions.resolve();
+            },
+            createOrder: (data, actions) => {
+              const buyer = buyerPayload();
+              const plan = getSelectedPlan();
+              return actions.order.create({
+                purchase_units: [
+                  {
+                    description: plan.label,
+                    custom_id: (plan.id + "|" + buyer.email).slice(0, 127),
+                    amount: {
+                      currency_code: CONFIG.currency,
+                      value: plan.amount
+                    }
+                  }
+                ],
+                payer: {
+                  email_address: buyer.email,
+                  name: {
+                    given_name: buyer.name.split(" ")[0] || buyer.name,
+                    surname: buyer.name.split(" ").slice(1).join(" ") || undefined
+                  }
+                },
+                application_context: {
+                  shipping_preference: "NO_SHIPPING",
+                  user_action: "PAY_NOW",
+                  brand_name: "Crometium TCG"
+                }
+              });
+            },
+            onApprove: async (data, actions) => {
+              try {
+                const details = await actions.order.capture();
+                const backend = await notifyBackendAfterPayment(details);
+                const email = buyerPayload().email;
+                showStatus(
+                  checkoutStatus,
+                  "ok",
+                  backend.message ||
+                    ("Pagamento riuscito. Controlla " + email + " per la license key (anche spam).")
+                );
+              } catch (err) {
+                console.error(err);
+                showStatus(
+                  checkoutStatus,
+                  "err",
+                  "Pagamento catturato ma consegna chiave non confermata. Contattaci con l’ID ordine PayPal."
+                );
+              }
+            },
+            onError: (err) => {
+              console.error(err);
+              showStatus(checkoutStatus, "err", "Errore PayPal. Riprova tra poco.");
+            },
+            onCancel: () => {
+              showStatus(checkoutStatus, "warn", "Pagamento annullato.");
+            }
+          })
+          .render("#paypal-button-container");
+      } catch (err) {
+        console.error(err);
+        showStatus(checkoutStatus, "err", err.message || "PayPal non disponibile");
+        if (CONFIG.allowDevSimulate) renderDevSimulateButton();
+      }
+    }
+
+    activateForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const key = keyInput.value.trim();
+      const field = document.getElementById("field-key");
+      field.classList.toggle("invalid", !key);
+      if (!key) {
+        showStatus(activateStatus, "err", "Inserisci una license key.");
+        return;
+      }
+
+      if (!CONFIG.licenseApiBase) {
+        showStatus(
+          activateStatus,
+          "warn",
+          "API non configurata su questa pagina. Apri Crometium TCG → Impostazioni, incolla la key e premi Attiva. In dev funziona anche PRO-DEV-…"
+        );
+        return;
+      }
+
+      try {
+        showStatus(activateStatus, "warn", "Verifica in corso…");
+        const res = await fetch(
+          CONFIG.licenseApiBase.replace(/\/$/, "") + "/v1/license/activate",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              licenseKey: key,
+              instanceId: "web-" + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
+            })
+          }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) {
+          showStatus(
+            activateStatus,
+            "err",
+            data.message || "Chiave non valida o scaduta (" + res.status + ")."
+          );
+          return;
+        }
+        showStatus(
+          activateStatus,
+          "ok",
+          "Chiave valida. Ora attivala anche nel popup dell’estensione per sbloccare Pro su Chrome."
+        );
+      } catch (err) {
+        console.error(err);
+        showStatus(activateStatus, "err", "Errore di rete verso l’API licenze.");
+      }
+    });
+
+    form.addEventListener("change", (e) => {
+      if (e.target && e.target.name === "plan") updateOrderSummary();
+    });
+
+    renderPricingUI();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("plan") && CONFIG.plans[params.get("plan")]) {
+      selectPlan(params.get("plan"));
+    } else {
+      selectPlan(CONFIG.defaultPlanId);
+    }
+
+    setPaypalEnabled(false);
+    initPayPal();
+  </script>
+</body>
+</html>

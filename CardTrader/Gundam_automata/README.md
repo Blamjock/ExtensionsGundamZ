@@ -39,18 +39,30 @@ Dettagli: [docs/I18N.md](docs/I18N.md).
 
 | Documento | Contenuto |
 |---|---|
+| [docs/API_TOKEN.md](docs/API_TOKEN.md) | **Guida:** creare il token CardTrader e inserirlo nell’app |
 | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) | Architettura, flusso check, storage, grafici |
 | [docs/I18N.md](docs/I18N.md) | Come funziona e come aggiungere una lingua |
 | [docs/MONETIZATION.md](docs/MONETIZATION.md) | Free / Pro, limiti, entitlement |
 | [docs/LICENSE_API.md](docs/LICENSE_API.md) | Contratto API licenze + checkout MoR |
+| [docs/STORE_LISTING.md](docs/STORE_LISTING.md) | Bozza scheda Chrome Web Store (IT/EN) |
+| [docs/STORE_PRIVACY_CHECKLIST.md](docs/STORE_PRIVACY_CHECKLIST.md) | Privacy + giustificazione permessi per la review |
 | [CHANGELOG.md](CHANGELOG.md) | Cronologia versioni |
 | [../README.md](../README.md) | Panoramica suite CardTrader |
+
+## Pack per Chrome Web Store
+
+```bash
+cd CardTrader/Gundam_automata
+./pack-store.sh          # → dist/CrometiumTCG-<version>-chrome.zip
+```
+
+Esclude `web/`, `docs/`, source icon e junk. Poi carica lo zip nella [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 
 ## Installazione rapida
 
 1. `chrome://extensions` → Modalità sviluppatore → **Carica non pacchettizzata**
 2. Seleziona questa cartella (`Gundam_automata`)
-3. Apri il popup → incolla API Token CardTrader → Salva
+3. Crea e incolla l’API Token CardTrader → **Salva** (vedi [docs/API_TOKEN.md](docs/API_TOKEN.md))
 4. (Opzionale) Scegli la lingua in Impostazioni
 5. Aggiungi Blueprint ID + prezzo max + canali da monitorare
 

@@ -8,7 +8,10 @@ import { GRACE_MS, pauseTrialIfActive, resumePausedTrial } from "./entitlements.
 /** Set to your backend origin in production, e.g. "https://api.crometium.example" */
 export const LICENSE_API_BASE = "";
 
-/** Public pricing / checkout page (Merchant of Record). */
+/**
+ * Public pricing / checkout page (PayPal + license key via email).
+ * Source in-repo: web/pricing.html — host it and set this URL to the public origin.
+ */
 export const CHECKOUT_URL = "https://crometium.example/pricing";
 
 const STUB_PREFIX = "PRO-DEV-";
