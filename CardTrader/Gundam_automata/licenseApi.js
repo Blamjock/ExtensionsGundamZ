@@ -12,7 +12,7 @@ export const LICENSE_API_BASE = "";
  * Public pricing / checkout page (PayPal + license key via email).
  * Source in-repo: web/pricing.html — host it and set this URL to the public origin.
  */
-export const CHECKOUT_URL = "https://crometium.example/pricing";
+export const CHECKOUT_URL = "https://www.forgeplay.studio/CrometiumTGC/";
 
 const STUB_PREFIX = "PRO-DEV-";
 
