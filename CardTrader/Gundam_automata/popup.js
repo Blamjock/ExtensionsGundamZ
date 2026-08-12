@@ -14,6 +14,12 @@ import {
     maxCardsFor
 } from "./entitlements.js";
 import { openCheckoutPage } from "./licenseApi.js";
+import {
+    legacyToWatch,
+    maskSecret,
+    normalizeWatchItem,
+    prepareWatchList
+} from "./watchItem.js";
 
 let entitlementState = { resolved: { tier: "free", source: "free" } };
 
@@ -56,6 +62,16 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
     await chrome.storage.local.set({ token });
     updateTokenBanner(token);
     setStatusUi(true, t("status.tokenSaved"));
+});
+
+document.getElementById("toggleTokenBtn").addEventListener("click", () => {
+    const input = document.getElementById("apiToken");
+    const btn = document.getElementById("toggleTokenBtn");
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    btn.setAttribute("aria-pressed", show ? "true" : "false");
+    btn.textContent = show ? t("settings.hideToken") : t("settings.showToken");
+    btn.setAttribute("title", show ? t("settings.hideToken") : t("settings.showToken"));
 });
 
 document.getElementById("savePollBtn").addEventListener("click", async () => {
@@ -382,7 +398,7 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     document.getElementById("autoCart").checked = autoCart;
 
     const data = await chrome.storage.local.get(["watchList", "sniperList"]);
-    let list = (data.watchList || (data.sniperList || []).map(legacyToWatch)).map(normalizeItem);
+    let list = (data.watchList || (data.sniperList || []).map(legacyToWatch)).map(normalizeWatchItem);
 
     const existing = list.findIndex((x) => x.bId === bId);
     if (existing < 0 && !can(ACTIONS.addCard, entitlementState.resolved, { watchListLength: list.length })) {
@@ -414,6 +430,9 @@ document.getElementById("addBtn").addEventListener("click", async () => {
 
     if (existing >= 0) list[existing] = entry;
     else list.push(entry);
+
+    const prepared = prepareWatchList(list, entitlementState.resolved);
+    list = prepared.list;
 
     await chrome.storage.local.set({
         token,
@@ -937,44 +956,6 @@ document.getElementById("clearArchiveBtn").addEventListener("click", async () =>
     loadCartArchive();
 });
 
-function legacyToWatch(item) {
-    return normalizeItem({
-        ...item,
-        autoCart: false,
-        label: "",
-        watchZero: true,
-        watchNormal: true
-    });
-}
-
-function normalizeItem(item) {
-    const watchZero = item.watchZero !== false;
-    let watchNormal = item.watchNormal !== false;
-    if (!watchZero && !watchNormal) watchNormal = true;
-    const lastSeenZero = item.lastSeenZero ?? null;
-    const lastSeenNormal = item.lastSeenNormal ?? null;
-    return {
-        bId: Number(item.bId),
-        target: Number(item.target),
-        autoCart: Boolean(item.autoCart),
-        label: typeof item.label === "string" ? item.label : "",
-        watchZero,
-        watchNormal,
-        lastAlertProductId: item.lastAlertProductId ?? null,
-        lastAlertAt: item.lastAlertAt ?? null,
-        lastAlertPrice: item.lastAlertPrice ?? null,
-        lastAlertChannel: item.lastAlertChannel ?? null,
-        lastSeenPrice: item.lastSeenPrice ?? null,
-        lastSeenZero,
-        lastSeenNormal,
-        lastSeenZeroAt: item.lastSeenZeroAt ?? null,
-        lastSeenNormalAt: item.lastSeenNormalAt ?? null,
-        minZero: item.minZero ?? lastSeenZero,
-        minNormal: item.minNormal ?? lastSeenNormal,
-        lastCartProductId: item.lastCartProductId ?? null
-    };
-}
-
 function formatEuro(v) {
     if (v == null || !Number.isFinite(Number(v))) return "—";
     return `€${Number(v).toFixed(2)}`;
@@ -1125,7 +1106,7 @@ async function loadAll() {
     document.getElementById("autoCart").checked = autoCart;
 
     if (data.licenseKey) {
-        document.getElementById("licenseKeyInput").placeholder = data.licenseKey;
+        document.getElementById("licenseKeyInput").placeholder = maskSecret(data.licenseKey);
     }
 
     if (data.cartAddress) {
@@ -1141,6 +1122,13 @@ async function loadAll() {
         const migrated = data.sniperList.map(legacyToWatch);
         await chrome.storage.local.set({ watchList: migrated });
         await chrome.storage.local.remove("sniperList");
+        data.watchList = migrated;
+    }
+
+    const watchSource = data.watchList || [];
+    const prepared = prepareWatchList(watchSource, entitlementState.resolved);
+    if (prepared.changed) {
+        await chrome.storage.local.set({ watchList: prepared.list });
     }
 
     if (data.lastStatus) {
@@ -1235,7 +1223,7 @@ function loadList() {
     chrome.storage.local.get(["watchList"], (data) => {
         const container = document.getElementById("list");
         container.innerHTML = "";
-        const list = (data.watchList || []).map(normalizeItem);
+        const list = (data.watchList || []).map(normalizeWatchItem);
 
         if (list.length === 0) {
             container.innerHTML = `<div class="empty">${escapeHtml(t("list.empty"))}</div>`;

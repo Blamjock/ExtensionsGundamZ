@@ -11,17 +11,26 @@ import {
     needsPeriodicVerify
 } from "./entitlements.js";
 import { activateLicense, clearLicense, verifyLicense } from "./licenseApi.js";
+import {
+    isValidBlueprintId,
+    listingPriceEuro,
+    normalizeWatchItem,
+    prepareWatchList
+} from "./watchItem.js";
 
 const BASE_URL = "https://api.cardtrader.com/api/v2";
 const ALARM_NAME = "sniperLoop";
 const DEFAULT_POLL_MINUTES = FREE_POLL_MINUTES;
 const ICON_URL = "icons/icon-128.png";
 const DEBUG_LOG_MAX = 30;
+const DEBUG_BODY_MAX_CHARS = 8000;
 const HISTORY_MAX_AGE_MS = 32 * 24 * 60 * 60 * 1000;
 const HISTORY_MAX_POINTS = 2500;
 const HISTORY_KEEP_RECENT = 720;
 
 let checkInFlight = false;
+let checkPending = false;
+let cycleEntitlement = null;
 
 const i18nReady = initI18n().catch((err) => console.error("i18n init:", err));
 
@@ -56,7 +65,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     }
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!isTrustedSender(sender)) return;
+
     if (message?.type === "runCheckNow") {
         i18nReady
             .then(() => runCheckCycle())
@@ -75,7 +86,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return true;
     }
     if (message?.type === "removePriceHistory") {
-        removePriceHistory(message.bId)
+        const bId = Number(message.bId);
+        if (!isValidBlueprintId(bId)) {
+            sendResponse({ ok: false, error: "invalid_bId" });
+            return true;
+        }
+        removePriceHistory(bId)
             .then(() => sendResponse({ ok: true }))
             .catch((err) => sendResponse({ ok: false, error: String(err) }));
         return true;
@@ -118,6 +134,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 });
 
+function isTrustedSender(sender) {
+    return sender?.id === chrome.runtime.id;
+}
+
+function truncateDebugValue(value) {
+    if (value == null) return value;
+    try {
+        const str = typeof value === "string" ? value : JSON.stringify(value);
+        if (str.length <= DEBUG_BODY_MAX_CHARS) return value;
+        return `${str.slice(0, DEBUG_BODY_MAX_CHARS)}… [truncated]`;
+    } catch {
+        return "[unserializable]";
+    }
+}
+
 async function maybeVerifyLicense() {
     try {
         const { entitlement } = await loadResolvedEntitlement();
@@ -136,7 +167,7 @@ function maskToken(token) {
 }
 
 async function isDebugMode() {
-    const { resolved } = await loadResolvedEntitlement();
+    const resolved = cycleEntitlement || (await loadResolvedEntitlement()).resolved;
     if (!can(ACTIONS.debug, resolved)) return false;
     const data = await chrome.storage.local.get(["debugMode"]);
     return Boolean(data.debugMode);
@@ -194,7 +225,7 @@ async function apiFetch(url, options = {}, meta = {}) {
                     ok: response.ok,
                     status: response.status,
                     statusText: response.statusText,
-                    body
+                    body: truncateDebugValue(body)
                 }
             });
         }
@@ -277,33 +308,6 @@ async function migrateStorage() {
     }
 }
 
-function normalizeWatchItem(item) {
-    const watchZero = item.watchZero !== false;
-    const watchNormal = item.watchNormal !== false;
-    const lastSeenZero = item.lastSeenZero ?? null;
-    const lastSeenNormal = item.lastSeenNormal ?? null;
-    return {
-        bId: Number(item.bId),
-        target: Number(item.target),
-        autoCart: Boolean(item.autoCart),
-        label: typeof item.label === "string" ? item.label : "",
-        watchZero,
-        watchNormal: watchZero || watchNormal ? watchNormal : true,
-        lastAlertProductId: item.lastAlertProductId ?? null,
-        lastAlertAt: item.lastAlertAt ?? null,
-        lastAlertPrice: item.lastAlertPrice ?? null,
-        lastAlertChannel: item.lastAlertChannel ?? null,
-        lastSeenPrice: item.lastSeenPrice ?? null,
-        lastSeenZero,
-        lastSeenNormal,
-        lastSeenZeroAt: item.lastSeenZeroAt ?? null,
-        lastSeenNormalAt: item.lastSeenNormalAt ?? null,
-        minZero: item.minZero ?? lastSeenZero,
-        minNormal: item.minNormal ?? lastSeenNormal,
-        lastCartProductId: item.lastCartProductId ?? null
-    };
-}
-
 function trackMinPrice(prevMin, current) {
     if (current == null || !Number.isFinite(Number(current))) return prevMin ?? null;
     const cur = Number(current);
@@ -368,8 +372,6 @@ async function ensureAlarm() {
     const minutes = await getPollMinutes();
     await chrome.alarms.clear(ALARM_NAME);
     chrome.alarms.create(ALARM_NAME, { periodInMinutes: minutes });
-    // Stop any leftover offscreen second-timer from older builds
-    chrome.runtime.sendMessage({ type: "stopPollTimer" }).catch(() => {});
 }
 
 async function aggiornaOrarioProssimoCheck() {
@@ -379,14 +381,22 @@ async function aggiornaOrarioProssimoCheck() {
 }
 
 async function runCheckCycle() {
-    if (checkInFlight) return;
+    if (checkInFlight) {
+        checkPending = true;
+        return;
+    }
     checkInFlight = true;
     try {
         await aggiornaOrarioProssimoCheck();
         await avviaControlloLista();
     } finally {
         checkInFlight = false;
+        cycleEntitlement = null;
         await aggiornaOrarioProssimoCheck();
+        if (checkPending) {
+            checkPending = false;
+            runCheckCycle().catch((err) => console.error("deferred poll:", err));
+        }
     }
 }
 
@@ -462,8 +472,11 @@ async function removePriceHistory(bId) {
 }
 
 async function valutaCanale({ item, next, listing, channel, token }) {
-    const currentPrice = listing.price.cents / 100;
-    const productId = listing.id;
+    const currentPrice = listingPriceEuro(listing);
+    const productId = listing?.id;
+    if (currentPrice == null || productId == null) {
+        return { next, alerted: false };
+    }
     const channelLabel = channel === "zero" ? t("channel.ctZero") : t("channel.normal");
 
     if (channel === "zero") next.lastSeenZero = currentPrice;
@@ -525,9 +538,9 @@ async function valutaCanale({ item, next, listing, channel, token }) {
 
 async function avviaControlloLista() {
     await i18nReady;
-    await migrateStorage();
     await maybeVerifyLicense();
     const { resolved } = await loadResolvedEntitlement();
+    cycleEntitlement = resolved;
     const data = await chrome.storage.local.get(["token", "watchList", "cartArchive"]);
     if (!data.token) {
         await setLastStatus(false, t("bg.tokenMissing"));
@@ -538,7 +551,16 @@ async function avviaControlloLista() {
         return;
     }
 
-    const rawList = data.watchList.map(normalizeWatchItem);
+    const prepared = prepareWatchList(data.watchList, resolved);
+    if (prepared.changed) {
+        await saveWatchList(prepared.list);
+    }
+    const rawList = prepared.list;
+    if (rawList.length === 0) {
+        await setLastStatus(true, t("bg.listEmpty"));
+        return;
+    }
+
     const list = rawList.map((item) => {
         const channels = clampChannels(item.watchZero, item.watchNormal, resolved);
         return {
@@ -555,6 +577,10 @@ async function avviaControlloLista() {
 
     for (let i = 0; i < list.length; i++) {
         const item = list[i];
+        if (!isValidBlueprintId(item.bId)) {
+            errors += 1;
+            continue;
+        }
         try {
             const url = `${BASE_URL}/marketplace/products?blueprint_id=${item.bId}`;
             const result = await apiFetch(
@@ -588,12 +614,14 @@ async function avviaControlloLista() {
             };
 
             const checkedAt = Date.now();
-            if (bestZero) {
-                next.lastSeenZero = bestZero.price.cents / 100;
+            const zeroPrice = listingPriceEuro(bestZero);
+            const normalPrice = listingPriceEuro(bestNormal);
+            if (zeroPrice != null) {
+                next.lastSeenZero = zeroPrice;
                 next.lastSeenZeroAt = checkedAt;
             }
-            if (bestNormal) {
-                next.lastSeenNormal = bestNormal.price.cents / 100;
+            if (normalPrice != null) {
+                next.lastSeenNormal = normalPrice;
                 next.lastSeenNormalAt = checkedAt;
             }
 

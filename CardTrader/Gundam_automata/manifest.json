@@ -8,12 +8,6 @@
     "https://api.cardtrader.com/*",
     "https://www.cardtrader.com/*"
   ],
-  "web_accessible_resources": [
-    {
-      "resources": ["sound_campanella.m4a", "sound_campanella.m4r"],
-      "matches": ["<all_urls>"]
-    }
-  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"

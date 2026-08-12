@@ -1,4 +1,5 @@
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, sender) => {
+    if (sender?.id !== chrome.runtime.id) return;
     if (message?.type !== "playAlertSound") return;
     playCampanella().catch((err) => console.error("Alert sound failed:", err));
 });

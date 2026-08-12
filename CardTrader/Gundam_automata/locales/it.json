@@ -39,6 +39,8 @@
   "settings.apiToken": "API Token",
   "settings.tokenPlaceholder": "Il tuo API Token",
   "settings.saveToken": "Salva token",
+  "settings.showToken": "Mostra",
+  "settings.hideToken": "Nascondi",
   "settings.pollInterval": "Intervallo polling (3–5 min)",
   "settings.apply": "Applica",
   "settings.cartAddress": "Indirizzo cart",

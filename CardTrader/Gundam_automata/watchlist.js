@@ -1,6 +1,7 @@
 import { init as initI18n, t, applyDom, getLocaleBcp47, onLocaleChange } from "./i18n.js";
 import { canChartRange, loadResolvedEntitlement, ACTIONS, can } from "./entitlements.js";
 import { openCheckoutPage } from "./licenseApi.js";
+import { normalizeWatchItem } from "./watchItem.js";
 
 let allItems = [];
 let searchTimer = null;
@@ -159,32 +160,8 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 async function loadList() {
     const data = await chrome.storage.local.get(["watchList", "sniperList"]);
     const raw = data.watchList || data.sniperList || [];
-    allItems = raw.map(normalizeItem);
+    allItems = raw.map(normalizeWatchItem);
     render();
-}
-
-function normalizeItem(item) {
-    const watchZero = item.watchZero !== false;
-    let watchNormal = item.watchNormal !== false;
-    if (!watchZero && !watchNormal) watchNormal = true;
-    const lastSeenZero = item.lastSeenZero ?? null;
-    const lastSeenNormal = item.lastSeenNormal ?? null;
-    return {
-        bId: Number(item.bId),
-        target: Number(item.target),
-        autoCart: Boolean(item.autoCart),
-        label: typeof item.label === "string" ? item.label : "",
-        watchZero,
-        watchNormal,
-        lastSeenZero,
-        lastSeenNormal,
-        lastSeenZeroAt: item.lastSeenZeroAt ?? null,
-        lastSeenNormalAt: item.lastSeenNormalAt ?? null,
-        minZero: item.minZero ?? lastSeenZero,
-        minNormal: item.minNormal ?? lastSeenNormal,
-        lastAlertChannel: item.lastAlertChannel ?? null,
-        lastAlertPrice: item.lastAlertPrice ?? null
-    };
 }
 
 function isUnderTarget(item) {
