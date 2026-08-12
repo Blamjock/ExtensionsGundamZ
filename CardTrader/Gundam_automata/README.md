@@ -21,7 +21,7 @@ Estensione Chrome (Manifest V3) per **monitorare i prezzi** sul marketplace [Car
 
 ## Free / Pro
 
-Un’unica estensione freemium. Trial Pro **15 giorni** all’installazione. Dopo: Free con limiti, oppure Pro via license key (stub `PRO-DEV-*` in sviluppo; backend reale in `docs/LICENSE_API.md`).
+Un’unica estensione freemium. Trial Pro **30 giorni** all’installazione. Dopo: Free con limiti, oppure Pro via license key (stub `PRO-DEV-*` in sviluppo; backend reale in `docs/LICENSE_API.md`).
 
 Dettagli: [docs/MONETIZATION.md](docs/MONETIZATION.md).
 

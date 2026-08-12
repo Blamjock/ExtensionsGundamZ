@@ -132,16 +132,61 @@
       font-weight: 600;
       color: #555;
       user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .collapsible summary::-webkit-details-marker { display: none; }
     .collapsible summary::before {
       content: "▸ ";
       color: #2980b9;
+      flex-shrink: 0;
     }
     .collapsible[open] summary::before { content: "▾ "; }
     .collapsible[open] summary {
       border-bottom: 1px solid #eee;
     }
+    .summary-label { flex: 1; min-width: 0; }
+    .help-btn {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid #2980b9;
+      background: #eaf4fb;
+      color: #2980b9;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .help-btn:hover,
+    .help-btn[aria-expanded="true"] {
+      background: #2980b9;
+      color: #fff;
+    }
+    .help-panel {
+      display: none;
+      margin: 0;
+      padding: 8px 10px 10px;
+      font-size: 0.76em;
+      font-weight: 400;
+      color: #2c3e50;
+      background: #eef6fb;
+      border-bottom: 1px solid #d4e6f1;
+      line-height: 1.45;
+    }
+    .help-panel.show { display: block; }
+    .help-panel ol {
+      margin: 4px 0 0;
+      padding-left: 1.2em;
+    }
+    .help-panel li { margin: 2px 0; }
+    .help-panel a { color: #1a6aa8; }
     .collapsible-body {
       padding: 10px;
     }
@@ -507,6 +552,7 @@
       font-weight: 600;
       color: #555;
       white-space: nowrap;
+      flex: 1;
     }
     #localeSelect {
       flex: 1;
@@ -515,6 +561,11 @@
       border-radius: 4px;
       font-size: 0.9em;
       background: #fff;
+    }
+    #localeHelpPanel.help-panel {
+      border: 1px solid #d4e6f1;
+      border-radius: 6px;
+      margin: -4px 0 10px;
     }
 
     #titleRow {
@@ -703,10 +754,16 @@
         <option value="es">Español</option>
         <option value="en">English</option>
       </select>
+      <button type="button" class="help-btn" data-help="help.language" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
     </div>
+    <div id="localeHelpPanel" class="help-panel" data-help-panel="help.language" data-i18n-html="help.language"></div>
 
     <details id="tokenDetails" class="collapsible" data-panel="tokenPanelOpen">
-      <summary data-i18n="settings.apiToken">API Token</summary>
+      <summary>
+        <span class="summary-label" data-i18n="settings.apiToken">API Token</span>
+        <button type="button" class="help-btn" data-help="help.apiToken" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
+      </summary>
+      <div class="help-panel" data-help-panel="help.apiToken" data-i18n-html="help.apiToken"></div>
       <div class="input-group collapsible-body">
         <input type="text" id="apiToken" data-i18n-placeholder="settings.tokenPlaceholder" placeholder="Il tuo API Token" autocomplete="off">
         <button type="button" id="saveTokenBtn" data-i18n="settings.saveToken">Salva token</button>
@@ -714,17 +771,25 @@
     </details>
 
     <details id="pollDetails" class="collapsible" data-panel="pollPanelOpen">
-      <summary><span data-i18n="settings.pollInterval">Intervallo polling (1–5 min)</span> <span class="pro-lock-tag" id="pollProTag" hidden>PRO</span></summary>
+      <summary>
+        <span class="summary-label"><span data-i18n="settings.pollInterval">Intervallo polling (3–5 min)</span> <span class="pro-lock-tag" id="pollProTag" hidden>PRO</span></span>
+        <button type="button" class="help-btn" data-help="help.poll" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
+      </summary>
+      <div class="help-panel" data-help-panel="help.poll" data-i18n-html="help.poll"></div>
       <div class="collapsible-body">
         <div class="row">
-          <input type="number" id="pollMinutes" min="1" max="5" step="1" value="2">
+          <input type="number" id="pollMinutes" min="3" max="5" step="1" value="3">
           <button type="button" id="savePollBtn" data-i18n="settings.apply">Applica</button>
         </div>
       </div>
     </details>
 
     <details id="addrDetails" class="collapsible" data-panel="addrPanelOpen">
-      <summary data-i18n="settings.cartAddress">Indirizzo cart</summary>
+      <summary>
+        <span class="summary-label" data-i18n="settings.cartAddress">Indirizzo cart</span>
+        <button type="button" class="help-btn" data-help="help.cartAddress" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
+      </summary>
+      <div class="help-panel" data-help-panel="help.cartAddress" data-i18n-html="help.cartAddress"></div>
       <div class="input-group collapsible-body">
         <p class="hint" data-i18n="settings.addrHint">Consigliato per l’auto-cart (usato in /cart/add).</p>
         <input type="text" id="addrName" data-i18n-placeholder="settings.addrName" placeholder="Nome">
@@ -742,7 +807,11 @@
     </details>
 
     <details id="soundDetails" class="collapsible" data-panel="soundPanelOpen">
-      <summary data-i18n="settings.notifications">Notifiche</summary>
+      <summary>
+        <span class="summary-label" data-i18n="settings.notifications">Notifiche</span>
+        <button type="button" class="help-btn" data-help="help.notifications" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
+      </summary>
+      <div class="help-panel" data-help-panel="help.notifications" data-i18n-html="help.notifications"></div>
       <div class="input-group collapsible-body">
         <label class="check" id="alertSoundLabel"><input type="checkbox" id="alertSound" checked> <span data-i18n="settings.alertSound">Suono all'alert</span><span class="pro-lock-tag" id="soundProTag" hidden>PRO</span></label>
         <button type="button" id="testSoundBtn" data-i18n="settings.testSound">Prova suono</button>
@@ -750,9 +819,13 @@
     </details>
 
     <details id="proLicenseDetails" class="collapsible" data-panel="proPanelOpen">
-      <summary data-i18n="pro.activateTitle">Attiva licenza Pro</summary>
+      <summary>
+        <span class="summary-label" data-i18n="pro.activateTitle">Attiva licenza Pro</span>
+        <button type="button" class="help-btn" data-help="help.license" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
+      </summary>
+      <div class="help-panel" data-help-panel="help.license" data-i18n-html="help.license"></div>
       <div class="input-group collapsible-body">
-        <p class="hint" data-i18n="pro.featuresHint">Pro: carte illimitate, Zero+Normale, poll 1–5′, auto-cart, suono, grafici lunghi, Espandi, debug.</p>
+        <p class="hint" data-i18n="pro.featuresHint">Pro: carte illimitate, Zero+Normale, poll 3–5′, auto-cart, suono, grafici lunghi, Espandi, debug.</p>
         <div class="row">
           <input type="text" id="licenseKeyInput" data-i18n-placeholder="pro.licensePlaceholder" placeholder="License key (es. PRO-DEV-…)" autocomplete="off">
           <button type="button" id="activateLicenseBtn" data-i18n="pro.activate">Attiva</button>
@@ -764,7 +837,11 @@
     </details>
 
     <details id="debugDetails" class="collapsible" data-panel="debugPanelOpen">
-      <summary><span data-i18n="settings.debug">Debug</span> <span class="pro-lock-tag" id="debugProTag" hidden>PRO</span></summary>
+      <summary>
+        <span class="summary-label"><span data-i18n="settings.debug">Debug</span> <span class="pro-lock-tag" id="debugProTag" hidden>PRO</span></span>
+        <button type="button" class="help-btn" data-help="help.debug" data-i18n-title="help.open" data-i18n-aria="help.open" title="Aiuto" aria-label="Aiuto" aria-expanded="false">?</button>
+      </summary>
+      <div class="help-panel" data-help-panel="help.debug" data-i18n-html="help.debug"></div>
       <div class="input-group collapsible-body">
         <label class="check"><input type="checkbox" id="debugMode"> <span data-i18n="settings.debugMode">Modalità debug API</span></label>
         <div id="debugPanel">

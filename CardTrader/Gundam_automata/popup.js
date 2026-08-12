@@ -2,6 +2,8 @@ import { init as initI18n, t, applyDom, setLocale, getLocale, getLocaleBcp47, on
 import {
     ACTIONS,
     FREE_POLL_MINUTES,
+    PRO_POLL_MAX_MINUTES,
+    PRO_POLL_MIN_MINUTES,
     can,
     canChartRange,
     clampAutoCart,
@@ -20,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyDom();
     const localeSelect = document.getElementById("localeSelect");
     if (localeSelect) localeSelect.value = getLocale();
+    initSettingsHelp();
     await refreshEntitlementUi();
     loadAll();
     avviaVisualizzazioneTimer();
@@ -58,13 +61,17 @@ document.getElementById("saveTokenBtn").addEventListener("click", async () => {
 document.getElementById("savePollBtn").addEventListener("click", async () => {
     await refreshEntitlementUi();
     if (!can(ACTIONS.pollFast, entitlementState.resolved)) {
-        showUpgradeModal(t("pro.limitPoll", { min: FREE_POLL_MINUTES }));
+        showUpgradeModal(t("pro.limitPoll", { minutes: FREE_POLL_MINUTES }));
         document.getElementById("pollMinutes").value = String(FREE_POLL_MINUTES);
         await chrome.storage.local.set({ pollMinutes: FREE_POLL_MINUTES });
         return;
     }
     let minutes = parseInt(document.getElementById("pollMinutes").value, 10);
-    if (!Number.isFinite(minutes) || minutes < 1 || minutes > 5) {
+    if (
+        !Number.isFinite(minutes) ||
+        minutes < PRO_POLL_MIN_MINUTES ||
+        minutes > PRO_POLL_MAX_MINUTES
+    ) {
         alert(t("alert.pollRange"));
         return;
     }
@@ -1383,6 +1390,41 @@ function hideUpgradeModal() {
     const overlay = document.getElementById("upgradeOverlay");
     overlay?.classList.remove("show");
     overlay?.setAttribute("aria-hidden", "true");
+}
+
+function initSettingsHelp() {
+    const root = document.getElementById("panel-impostazioni");
+    if (!root || root.dataset.helpBound === "1") return;
+    root.dataset.helpBound = "1";
+
+    root.addEventListener("click", (e) => {
+        const link = e.target.closest(".help-panel a[href]");
+        if (link && root.contains(link)) {
+            e.preventDefault();
+            const url = link.href;
+            if (url) chrome.tabs.create({ url });
+            return;
+        }
+
+        const btn = e.target.closest(".help-btn");
+        if (!btn || !root.contains(btn)) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const key = btn.getAttribute("data-help");
+        const panel = root.querySelector(`[data-help-panel="${key}"]`);
+        const willShow = panel && !panel.classList.contains("show");
+
+        root.querySelectorAll(".help-panel").forEach((p) => p.classList.remove("show"));
+        root.querySelectorAll(".help-btn").forEach((b) => b.setAttribute("aria-expanded", "false"));
+
+        if (willShow && panel) {
+            panel.classList.add("show");
+            btn.setAttribute("aria-expanded", "true");
+            const details = btn.closest("details");
+            if (details) details.open = true;
+        }
+    });
 }
 
 function licenseErrorMessage(error) {

@@ -41,9 +41,9 @@ COSA FA
 • Opzionale (Pro): suono di alert e auto-cart sul carrello CardTrader
 
 PIANI FREE E PRO
-• Trial Pro: 15 giorni dall’installazione
-• Free: fino a 5 carte, un canale alla volta (Zero oppure Normale), polling fisso 5 minuti, grafico Giorno
-• Pro: fino a 100 carte, Zero + Normale insieme, polling 1–5 minuti, suono, auto-cart, grafici Settimana/Mese, watchlist a schermo intero
+• Trial Pro: 30 giorni dall’installazione
+• Free: fino a 5 carte, un canale alla volta (Zero oppure Normale), polling fisso 20 minuti, grafico Giorno
+• Pro: fino a 100 carte, Zero + Normale insieme, polling 3–5 minuti, suono, auto-cart, grafici Settimana/Mese, watchlist a schermo intero
 
 Come passare a Pro: acquisto esterno (PayPal) sulla pagina prezzi → ricevi una license key via email → attivala in Impostazioni. Chrome Web Store non gestisce il pagamento in-app.
 
@@ -90,9 +90,9 @@ WHAT IT DOES
 • Optional (Pro): alert sound and auto-cart into your CardTrader cart
 
 FREE AND PRO
-• Pro trial: 15 days from install
-• Free: up to 5 cards, one channel at a time (Zero or Normal), fixed 5-minute polling, Day chart only
-• Pro: up to 100 cards, Zero + Normal together, 1–5 minute polling, sound, auto-cart, Week/Month charts, full-page watchlist
+• Pro trial: 30 days from install
+• Free: up to 5 cards, one channel at a time (Zero or Normal), fixed 20-minute polling, Day chart only
+• Pro: up to 100 cards, Zero + Normal together, 3–5 minute polling, sound, auto-cart, Week/Month charts, full-page watchlist
 
 Upgrade path: pay externally (PayPal) on the pricing page → receive a license key by email → activate it in Settings. Chrome Web Store does not handle in-extension payments.
 

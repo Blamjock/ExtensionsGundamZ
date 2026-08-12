@@ -27,7 +27,7 @@ Risposte tipiche da selezionare / dichiarare (adatta al form attuale CWS):
 | Permesso | Usato? | Dove | Cosa dire a Google (EN) | Cosa dire in Privacy Policy (IT) |
 |---|---|---|---|---|
 | `storage` | Sì | `background.js`, `popup.js`, `entitlements.js`, `licenseApi.js`, … | Stores the user’s CardTrader API token, watchlist, settings, price history samples, cart archive, and Pro license entitlement in `chrome.storage.local` on the device. | Salviamo in locale (Chrome): token API, watchlist, impostazioni, storico prezzi, archivio carrello e stato licenza Pro. Non carichiamo questi dati sui nostri server dall’estensione (finché `LICENSE_API_BASE` non è configurato verso il tuo backend). |
-| `alarms` | Sì | `background.js` | Schedules periodic marketplace price checks while Chrome is running. | Usiamo allarmi Chrome per controllare i prezzi a intervalli (Free: 5′; Pro: 1–5′). |
+| `alarms` | Sì | `background.js` | Schedules periodic marketplace price checks while Chrome is running. | Usiamo allarmi Chrome per controllare i prezzi a intervalli (Free: 20′; Pro: 3–5′). |
 | `notifications` | Sì | `background.js` | Shows a desktop notification when a watched listing is at or under the user’s target price. | Mostriamo una notifica di sistema quando una carta in watchlist è ≤ soglia. |
 | `offscreen` | Sì | `background.js` + `offscreen.html` | Creates a short-lived offscreen document to play an optional alert sound on target hits (Pro). | Documento offscreen temporaneo solo per riprodurre il suono di alert (Pro), se abilitato. |
 | `activeTab` | Sì | `popup.js` (`readCardFromActiveTab`) | Accesses the active tab only when the user chooses to add a card from the current CardTrader page. | Solo quando l’utente aggiunge una carta dalla scheda attiva: leggiamo l’URL/tab corrente. |
@@ -128,7 +128,7 @@ Versione IT breve da affiancare sulla stessa pagina se vuoi bilingual.
 - [ ] Privacy Policy online con HTTPS e link in Dashboard  
 - [ ] Ogni permesso del `manifest.json` ha una justification in inglese nel form  
 - [ ] Host `api.cardtrader.com` e `www.cardtrader.com` giustificati  
-- [ ] Descrizione store spiega Free / trial 15gg / Pro esterno (PayPal + key)  
+- [ ] Descrizione store spiega Free / trial 30gg / Pro esterno (PayPal + key)  
 - [ ] Nessun secret nello ZIP (`./pack-store.sh` esclude `web/`, `docs/`, source icon)  
 - [ ] Token non appare nei log debug in chiaro  
 - [ ] Screenshot non mostrano token o dati personali reali  

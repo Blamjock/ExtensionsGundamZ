@@ -18,7 +18,8 @@ Tutte usano **Manifest Version 3**.
 2. Un **API Token** CardTrader (da [CardTrader → Settings → API](https://www.cardtrader.com)), necessario per:
    - Mobile Price Suit
    - Crometium TCG  
-   *(Mobile Price Analyzer non usa l’API: legge il DOM della pagina ordini.)*
+   *(Mobile Price Analyzer non usa l’API: legge il DOM della pagina ordini.)*  
+   Guida passo-passo per Crometium: [`Gundam_automata/docs/API_TOKEN.md`](Gundam_automata/docs/API_TOKEN.md).
 
 ### Installazione (tutte)
 
@@ -131,7 +132,7 @@ Watcher in background che monitora una lista di blueprint e, se il prezzo di mer
 
 ### Funzionalità
 
-- Alarm periodico (`sniperLoop`) con intervallo configurabile (`pollMinutes`, default 2, range 1–5).
+- Alarm / timer periodico (`sniperLoop` + offscreen) con intervallo configurabile (`pollMinutes`, Free fisso 20; Pro 3–5).
 - Per ogni voce: `GET marketplace/products?blueprint_id=...` → separa listing Zero vs Normale e prende il migliore di ogni canale monitorato.
 - Se sotto soglia: notifica “Prezzo basso!” con canale (`[CT Zero]` / `[Normale]`); dedupe per `product_id` + canale; ri-alert se il prezzo scende ulteriormente.
 - **Suono alert**: riproduce `sound_campanella` tramite documento offscreen MV3 (attivabile/disattivabile dal popup).
@@ -169,13 +170,13 @@ Watcher in background che monitora una lista di blueprint e, se il prezzo di mer
 
 ### Intervallo di polling
 
-Configurabile dal popup (`pollMinutes`). Default **2 minuti**. Countdown e alarm allineati.
+Configurabile dal popup (`pollMinutes`). Free fisso **20 minuti**; Pro **3–5 minuti**. Countdown e timer allineati.
 
 ### Configurazione
 
-1. Apri il popup → incolla API Token → **Salva token**
+1. Crea e salva l’API Token (guida: [`Gundam_automata/docs/API_TOKEN.md`](Gundam_automata/docs/API_TOKEN.md))
 2. (Opzionale) Scegli lingua (IT/EN/ES) — l’app è multilingua
-3. (Opzionale) Imposta intervallo 1–5 min → **Applica**
+3. (Opzionale) Imposta intervallo 3–5 min → **Applica**
 4. Inserisci Blueprint ID, prezzo max, eventuale label
 5. Seleziona cosa controllare: **CT Zero** e/o **Normale**
 6. (Opzionale) Auto-cart e/o suono alert → **Aggiungi alla lista**
@@ -217,12 +218,12 @@ Riferimento Postman: `gundam_market/card_trader_postman_collection.json`.
 | `token` | Alert | Bearer token |
 | `watchList` | Alert | `[{ bId, target, watchZero, watchNormal, autoCart, lastSeenZero, lastSeenNormal, ... }]` |
 | `priceHistory` | Alert | `{ [blueprintId]: [{ t, z, n }, ...] }` — storico prezzi per grafici |
-| `pollMinutes` | Alert | Intervallo alarm (1–5, default 2) |
+| `pollMinutes` | Alert | Intervallo poll (Free 20; Pro 3–5) |
 | `nextTick` | Alert | Timestamp prossimo check |
 | `lastStatus` | Alert | Esito ultimo ciclo `{ ok, message, at }` |
 | `locale` | Alert | Lingua UI (`it` / `en` / `es`) |
 | `alertSound` | Alert | Boolean — suono campanella sugli alert (default `true`; effettivo solo in Pro) |
-| `installAt` | Alert | Timestamp prima installazione (trial 15gg) |
+| `installAt` | Alert | Timestamp prima installazione (trial 30gg) |
 | `entitlement` | Alert | Cache licenza `{ tier, expiresAt, licenseId, lastVerifiedAt, source }` |
 | `licenseKey` | Alert | Chiave Pro attivata |
 | `devForcePro` | Alert | Boolean — forza Pro in sviluppo |

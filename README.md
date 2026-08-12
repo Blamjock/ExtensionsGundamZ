@@ -6,7 +6,7 @@ This repository contains three projects under `CardTrader/`:
 
 - `CardTrader/gundam_market`: Search prices via the CardTrader API, show offers, and use the context menu on selected text.
 - `CardTrader/gundam_analyzer`: Analyze buyer order pages on CardTrader (rarity totals).
-- `CardTrader/Gundam_automata`: **Crometium TCG** (v0.8) — multilingual (IT/EN/ES) freemium price watcher: Free + Pro (trial 15 days), alerts, charts, optional auto-cart, watchlist page.
+- `CardTrader/Gundam_automata`: **Crometium TCG** (v0.8) — multilingual (IT/EN/ES) freemium price watcher: Free + Pro (trial 30 days), alerts, charts, optional auto-cart, watchlist page.
 
 Full documentation:
 
@@ -73,13 +73,13 @@ Alternatively, create/copy a token from [CardTrader → Settings → API](https:
 
 ## How to use Crometium TCG (`Gundam_automata`)
 
-**Multilingual + freemium:** Italian, English, Spanish. Free tier with limits; Pro via license (15-day trial on install). See [MONETIZATION.md](CardTrader/Gundam_automata/docs/MONETIZATION.md).
+**Multilingual + freemium:** Italian, English, Spanish. Free tier with limits; Pro via license (30-day trial on install). See [MONETIZATION.md](CardTrader/Gundam_automata/docs/MONETIZATION.md).
 
 1. Open the popup → paste API token → Save.
 2. (Optional) Choose language in **Settings**.
 3. Add a Blueprint ID, max price, and which channels to watch (CT Zero / Normal — both require Pro).
 4. Optionally enable auto-cart and alert sound (**Pro**).
-5. Leave Chrome open; the alarm polls the marketplace on the interval you set (Free: 5′ fixed).
+5. Leave Chrome open; the alarm polls the marketplace on the interval you set (Free: 20′ fixed; Pro: 3–5′).
 6. After a few checks, open the chart on a card (popup or **watchlist** page):
    - Free: Day only · Pro: Day / Week / Month
    - Hover the lines to see timestamp + Zero/Normal values next to the cursor

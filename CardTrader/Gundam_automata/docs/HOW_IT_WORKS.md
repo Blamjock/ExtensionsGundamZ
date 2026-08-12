@@ -30,7 +30,7 @@ flowchart LR
 ## Ciclo di polling
 
 1. All’installazione / startup: `migrateStorage()` + `ensureAlarm()`.
-2. L’alarm `sniperLoop` scatta ogni `pollMinutes` (default 2, range 1–5).
+2. L’alarm `sniperLoop` scatta ogni `pollMinutes` (Free fisso 20; Pro 3–5).
 3. `avviaControlloLista()` legge `watchList` + `token`.
 4. Per ogni blueprint: `GET /api/v2/marketplace/products?blueprint_id=...`.
 5. Split offerte → miglior **Zero** e miglior **Normale**.
@@ -72,7 +72,7 @@ Ogni check aggiunge `{ t, z, n }` in `priceHistory[blueprintId]`.
 | `pollMinutes` / `nextTick` | Intervallo e countdown |
 | `locale` | `it` \| `en` \| `es` |
 | `alertSound` | Suono on/off (effetto solo in Pro) |
-| `installAt` | Prima installazione (trial 15 giorni) |
+| `installAt` | Prima installazione (trial 30 giorni) |
 | `entitlement` / `licenseKey` | Cache e chiave Pro |
 | `cartArchive` / `cartAddress` | Auto-cart |
 | `debugMode` / `debugLogs` | Debug API (Pro) |

@@ -5,8 +5,12 @@
 
 export const FREE_MAX_CARDS = 5;
 export const PRO_MAX_CARDS = 100;
-export const FREE_POLL_MINUTES = 5;
-export const TRIAL_MS = 15 * 24 * 60 * 60 * 1000;
+/** Free: fixed marketplace poll interval (minutes). */
+export const FREE_POLL_MINUTES = 20;
+/** Pro: selectable poll interval range (minutes). */
+export const PRO_POLL_MIN_MINUTES = 3;
+export const PRO_POLL_MAX_MINUTES = 5;
+export const TRIAL_MS = 30 * 24 * 60 * 60 * 1000;
 export const GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 export const VERIFY_EVERY_MS = 12 * 60 * 60 * 1000;
 
@@ -164,9 +168,9 @@ export function maxCardsFor(resolved) {
 
 export function clampPollMinutes(minutes, resolved) {
     const n = Number(minutes);
-    const raw = !Number.isFinite(n) || n < 1 ? FREE_POLL_MINUTES : Math.round(n);
     if (!isPro(resolved)) return FREE_POLL_MINUTES;
-    return Math.min(5, Math.max(1, raw));
+    const raw = !Number.isFinite(n) ? PRO_POLL_MIN_MINUTES : Math.round(n);
+    return Math.min(PRO_POLL_MAX_MINUTES, Math.max(PRO_POLL_MIN_MINUTES, raw));
 }
 
 /**

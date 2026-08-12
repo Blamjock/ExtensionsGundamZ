@@ -68,14 +68,21 @@ rm -f "$ZIP_PATH"
 
 rm -rf "$STAGE"
 
+# Mirror into web/ for pricing page download (CONFIG.zipUrl).
+WEB_ZIP="$ROOT/web/$ZIP_NAME"
+mkdir -p "$ROOT/web"
+cp -f "$ZIP_PATH" "$WEB_ZIP"
+
 BYTES="$(wc -c < "$ZIP_PATH" | tr -d ' ')"
 echo "OK: $ZIP_PATH ($BYTES bytes)"
+echo "Web: $WEB_ZIP"
 echo
 echo "Next:"
 echo "  1. chrome://extensions → Load unpacked → test $ROOT"
 echo "  2. https://chrome.google.com/webstore/devconsole → New item / Upload"
 echo "  3. Paste listing from docs/STORE_LISTING.md"
 echo "  4. Complete privacy from docs/STORE_PRIVACY_CHECKLIST.md"
+echo "  5. pricing.html CONFIG.zipUrl → \"$ZIP_NAME\""
 echo
 echo "Contents preview:"
 unzip -l "$ZIP_PATH" | head -n 40

@@ -21,6 +21,8 @@ const HISTORY_MAX_AGE_MS = 32 * 24 * 60 * 60 * 1000;
 const HISTORY_MAX_POINTS = 2500;
 const HISTORY_KEEP_RECENT = 720;
 
+let checkInFlight = false;
+
 const i18nReady = initI18n().catch((err) => console.error("i18n init:", err));
 
 chrome.runtime.onInstalled.addListener(async () => {
@@ -50,18 +52,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ALARM_NAME) {
-        aggiornaOrarioProssimoCheck();
-        avviaControlloLista();
+        runCheckCycle().catch((err) => console.error("alarm poll:", err));
     }
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "runCheckNow") {
         i18nReady
-            .then(() => {
-                aggiornaOrarioProssimoCheck();
-                return avviaControlloLista();
-            })
+            .then(() => runCheckCycle())
             .then(() => sendResponse({ ok: true }))
             .catch((err) => sendResponse({ ok: false, error: String(err) }));
         return true;
@@ -237,6 +235,7 @@ async function migrateStorage() {
         "sniperList",
         "watchList",
         "pollMinutes",
+        "pollSeconds",
         "debugMode",
         "installAt",
         "entitlement"
@@ -250,7 +249,11 @@ async function migrateStorage() {
         updates.entitlement = { tier: "free", source: "free", lastVerifiedAt: Date.now() };
     }
     if (data.pollMinutes == null) {
-        updates.pollMinutes = DEFAULT_POLL_MINUTES;
+        const legacy = Number(data.pollSeconds);
+        updates.pollMinutes =
+            Number.isFinite(legacy) && legacy >= 3 && legacy <= 60
+                ? Math.round(legacy)
+                : DEFAULT_POLL_MINUTES;
     }
     if (data.debugMode == null) {
         updates.debugMode = false;
@@ -266,8 +269,11 @@ async function migrateStorage() {
     if (Object.keys(updates).length > 0) {
         await chrome.storage.local.set(updates);
     }
-    if (data.sniperList) {
-        await chrome.storage.local.remove("sniperList");
+    const toRemove = [];
+    if (data.sniperList) toRemove.push("sniperList");
+    if (data.pollSeconds != null) toRemove.push("pollSeconds");
+    if (toRemove.length) {
+        await chrome.storage.local.remove(toRemove);
     }
 }
 
@@ -362,12 +368,26 @@ async function ensureAlarm() {
     const minutes = await getPollMinutes();
     await chrome.alarms.clear(ALARM_NAME);
     chrome.alarms.create(ALARM_NAME, { periodInMinutes: minutes });
+    // Stop any leftover offscreen second-timer from older builds
+    chrome.runtime.sendMessage({ type: "stopPollTimer" }).catch(() => {});
 }
 
 async function aggiornaOrarioProssimoCheck() {
     const minutes = await getPollMinutes();
     const prossimo = Date.now() + minutes * 60 * 1000;
     await chrome.storage.local.set({ nextTick: prossimo });
+}
+
+async function runCheckCycle() {
+    if (checkInFlight) return;
+    checkInFlight = true;
+    try {
+        await aggiornaOrarioProssimoCheck();
+        await avviaControlloLista();
+    } finally {
+        checkInFlight = false;
+        await aggiornaOrarioProssimoCheck();
+    }
 }
 
 async function setLastStatus(ok, message) {

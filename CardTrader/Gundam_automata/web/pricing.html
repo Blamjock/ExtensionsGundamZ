@@ -94,6 +94,31 @@
       color: #fff;
       background: rgba(255, 255, 255, 0.08);
     }
+    .lang-switch {
+      display: inline-flex;
+      gap: 0.2rem;
+      margin-left: 0.35rem;
+      padding: 0.2rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .lang-switch button {
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      padding: 0.35rem 0.55rem;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .lang-switch button:hover { color: #fff; }
+    .lang-switch button.active {
+      background: #fff;
+      color: var(--navy);
+    }
 
     /* —— Hero —— */
     .hero {
@@ -252,6 +277,62 @@
     }
 
     /* —— Compare —— */
+
+    .speed-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin: 2rem 0 2.5rem;
+    }
+    .speed-tier {
+      padding: 1.5rem 1.35rem 1.35rem;
+      border-radius: var(--radius);
+      background: #fff;
+      border: 1px solid rgba(44, 62, 80, 0.1);
+    }
+    .speed-tier.pro {
+      background: linear-gradient(165deg, #1a2836 0%, #243447 100%);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: var(--shadow);
+    }
+    .speed-tier .tier-label {
+      margin: 0 0 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .speed-tier.pro .tier-label { color: var(--sky-bright); }
+    .speed-tier .tier-value {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(1.65rem, 3.5vw, 2.35rem);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--navy);
+    }
+    .speed-tier.pro .tier-value { color: #fff; }
+    .speed-tier .tier-note {
+      margin: 0.55rem 0 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .speed-tier.pro .tier-note { color: rgba(236, 240, 241, 0.72); }
+    .compare-more {
+      margin: 0 0 0.85rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      color: var(--navy);
+    }
+    @media (max-width: 860px) {
+      .speed-split { grid-template-columns: 1fr; }
+    }
+
     .compare {
       background:
         linear-gradient(180deg, #dfe7ee 0%, var(--paper) 100%);
@@ -638,6 +719,166 @@
     .steps strong { display: block; margin-bottom: 0.15rem; }
     .steps span { color: var(--muted); font-size: 0.92rem; }
 
+    /* —— Download —— */
+    .download {
+      background: #fff;
+    }
+    .download-grid {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .download-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin: 1.1rem 0 0.85rem;
+    }
+    .download-actions .btn { min-height: 2.75rem; }
+    .download-count {
+      margin: 0 0 0.85rem;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--slate);
+    }
+    .download-count strong {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+    }
+    .btn-store {
+      background: #1a73e8;
+      color: #fff;
+      box-shadow: 0 10px 28px rgba(26, 115, 232, 0.28);
+    }
+    .btn-store:hover { background: #1557b0; }
+    .btn-store[aria-disabled="true"],
+    #btn-download-zip[aria-disabled="true"] {
+      opacity: 0.55;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+    /* zip button stays clickable when disabled to show config hint */
+    #btn-download-zip[aria-disabled="true"] {
+      pointer-events: auto;
+      opacity: 0.85;
+    }
+    .install-note {
+      margin: 0.75rem 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .install-note code {
+      font-size: 0.85em;
+    }
+    .kbd {
+      display: inline-block;
+      padding: 0.05em 0.4em;
+      border-radius: 6px;
+      border: 1px solid #cfd8e1;
+      background: #f4f7fa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.84em;
+      color: var(--slate);
+    }
+
+    /* —— Survey —— */
+    .survey {
+      background:
+        radial-gradient(ellipse 55% 45% at 0% 100%, rgba(52, 152, 219, 0.1), transparent 55%),
+        var(--paper);
+    }
+    .survey-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .survey-q {
+      margin: 0 0 0.55rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--slate);
+    }
+    .survey-q-block { margin-bottom: 1.25rem; }
+    .survey-q-block:last-of-type { margin-bottom: 0.5rem; }
+    .survey-options {
+      display: grid;
+      gap: 0.5rem;
+    }
+    .survey-options.cols-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+    .survey-option {
+      position: relative;
+      display: block;
+      padding: 0.7rem 0.85rem;
+      border: 1.5px solid #cfd8e1;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--slate);
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .survey-option:hover { border-color: var(--sky-bright); }
+    .survey-option:has(input:checked) {
+      border-color: var(--sky);
+      background: #eef6fb;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    }
+    .survey-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .survey-thanks {
+      display: none;
+      padding: 1.25rem 0 0.25rem;
+    }
+    .survey-thanks.show { display: block; }
+    .survey-thanks h3 {
+      margin: 0 0 0.4rem;
+      font-family: var(--font-display);
+      letter-spacing: -0.02em;
+    }
+    .tally {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.65rem;
+    }
+    .tally li {
+      display: grid;
+      gap: 0.25rem;
+    }
+    .tally-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--slate);
+    }
+    .tally-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8ef;
+      overflow: hidden;
+    }
+    .tally-bar > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--sky), var(--mint));
+      transition: width 0.45s ease;
+    }
+
     /* —— Activate —— */
     .activate {
       background:
@@ -692,7 +933,9 @@
     @media (max-width: 860px) {
       .hero-inner,
       .checkout-grid,
-      .activate-grid {
+      .activate-grid,
+      .download-grid,
+      .survey-grid {
         grid-template-columns: 1fr;
       }
       .price-strip {
@@ -709,11 +952,21 @@
       .compare-table { font-size: 0.9rem; }
       .compare-table th,
       .compare-table td { padding: 0.75rem 0.7rem; }
+      .survey-options.cols-2 { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 520px) {
       .wrap { width: min(100% - 1.5rem, 1100px); }
       .nav-links a:not(.nav-cta) { display: none; }
+      .lang-switch { margin-left: 0; }
+    }
+
+    /* Market test: nascondi checkout / Abbonamenti Pro (rimuovi questo blocco per ripristinare) */
+    #acquista,
+    a[href="#acquista"],
+    #piani,
+    a[href="#piani"] {
+      display: none !important;
     }
   </style>
 </head>
@@ -724,11 +977,18 @@
         <img src="icon-128.png" alt="" width="36" height="36" />
         Crometium TCG
       </a>
-      <nav class="nav-links" aria-label="Sezioni">
-        <a href="#confronta">Confronta</a>
-        <a href="#piani">Prezzi</a>
-        <a href="#acquista">Acquista</a>
-        <a class="nav-cta" href="#attiva">Attiva chiave</a>
+      <nav class="nav-links" data-i18n-aria="nav.aria" aria-label="Sezioni">
+        <a href="#download" data-i18n="nav.download">Download</a>
+        <a href="#sondaggio" data-i18n="nav.survey">Sondaggio</a>
+        <a href="#piani" data-i18n="nav.pricing">Prezzi</a>
+        <a href="#confronta" data-i18n="nav.compare">Confronta</a>
+        <a class="nav-cta" href="#attiva" data-i18n="nav.activate">Attiva chiave</a>
+        <a href="#acquista" data-i18n="nav.buy">Acquista</a>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="it" class="active">IT</button>
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
       </nav>
     </div>
   </header>
@@ -738,13 +998,13 @@
       <div class="wrap hero-inner">
         <div class="hero-copy">
           <p class="hero-brand">Crometium TCG</p>
-          <h1 class="hero-title">Alert prezzi CardTrader, senza perdere il sniper timing.</h1>
-          <p class="hero-lead">
-            Free per iniziare. Pro per scala, velocità e auto-cart. Paga con PayPal e ricevi la license key via email.
+          <h1 class="hero-title" data-i18n="hero.title">Alert prezzi CardTrader, senza perdere il sniper timing.</h1>
+          <p class="hero-lead" data-i18n="hero.lead">
+            Free ogni 20 minuti. Pro ogni 3–5 minuti, con scala, dual-channel e auto-cart. Scarica, prova il trial, poi attiva la key.
           </p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="#piani">Scegli abbonamento Pro</a>
-            <a class="btn btn-ghost" href="#confronta">Vedi differenze</a>
+            <a class="btn btn-primary" href="#download" data-i18n="hero.ctaDownload">Scarica per Chrome</a>
+            <a class="btn btn-ghost" href="#piani" data-i18n="hero.ctaPricing">Vedi prezzi Pro</a>
           </div>
         </div>
         <div class="hero-visual" aria-hidden="true">
@@ -755,83 +1015,172 @@
       </div>
     </section>
 
-    <section class="compare" id="confronta">
+    <section class="download" id="download">
       <div class="wrap">
-        <p class="section-kicker">Piani</p>
-        <h2 class="section-title">Free vs Pro, chiaro in un colpo d’occhio</h2>
-        <p class="section-lead">
-          Free completa il loop aggiungi → check → alert. Pro sblocca scala, dual-channel, automazione e grafici lunghi.
+        <p class="section-kicker" data-i18n="download.kicker">Download</p>
+        <h2 class="section-title" data-i18n="download.title">Installa Crometium TCG su Chrome</h2>
+        <p class="section-lead" data-i18n="download.lead">
+          Estensione Manifest V3 per Chrome / Chromium. Dopo l’installazione inserisci il token API CardTrader e parti con 30 giorni di trial Pro.
         </p>
 
-        <table class="compare-table">
-          <thead>
-            <tr>
-              <th>Funzionalità</th>
-              <th>Free</th>
-              <th class="pro-col">Pro</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="feature-name">Watchlist</td>
-              <td class="cell-free">max 5 carte</td>
-              <td class="cell-pro">fino a 100 carte</td>
-            </tr>
-            <tr>
-              <td class="feature-name">Canali CT Zero / Normale</td>
-              <td class="cell-free">uno solo alla volta</td>
-              <td class="cell-pro">entrambi insieme</td>
-            </tr>
-            <tr>
-              <td class="feature-name">Intervallo polling</td>
-              <td class="cell-free">fisso 5 minuti</td>
-              <td class="cell-pro">da 1 a 5 minuti</td>
-            </tr>
-            <tr>
-              <td class="feature-name">Alert</td>
-              <td class="cell-free">notifica browser</td>
-              <td class="cell-pro">notifica + suono</td>
-            </tr>
-            <tr>
-              <td class="feature-name">Auto-cart</td>
-              <td class="cell-free"><span class="cross">—</span></td>
-              <td class="cell-pro"><span class="check">✓</span> abilitato</td>
-            </tr>
-            <tr>
-              <td class="feature-name">Grafici storico</td>
-              <td class="cell-free">solo Giorno</td>
-              <td class="cell-pro">Giorno / Settimana / Mese</td>
-            </tr>
-            <tr>
-              <td class="feature-name">Watchlist a schermo intero</td>
-              <td class="cell-free"><span class="cross">—</span></td>
-              <td class="cell-pro"><span class="check">✓</span></td>
-            </tr>
-            <tr>
-              <td class="feature-name">Debug API</td>
-              <td class="cell-free"><span class="cross">—</span></td>
-              <td class="cell-pro"><span class="check">✓</span></td>
-            </tr>
-            <tr>
-              <td class="feature-name">Lingue IT / EN / ES</td>
-              <td class="cell-free"><span class="check">✓</span></td>
-              <td class="cell-pro"><span class="check">✓</span></td>
-            </tr>
-            <tr>
-              <td class="feature-name">Trial all’installazione</td>
-              <td class="cell-free" colspan="2" style="color:var(--slate)">15 giorni Pro inclusi, poi Free o license key</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="download-grid">
+          <div class="panel">
+            <h3 data-i18n="download.getTitle">Scarica l’app</h3>
+            <p class="hint" data-i18n="download.getHint">
+              Quando sarà sullo Store userai un click. Intanto puoi installarla in modalità sviluppatore dal pacchetto ZIP.
+            </p>
+            <div class="download-actions">
+              <a class="btn btn-store" id="btn-chrome-store" href="#" target="_blank" rel="noopener" data-i18n="download.btnStore">Chrome Web Store</a>
+              <a class="btn btn-dark" id="btn-download-zip" href="#" download data-i18n="download.btnZip">Scarica ZIP</a>
+            </div>
+            <p class="download-count" id="download-count" aria-live="polite" data-i18n="download.count0">Nessun download ancora.</p>
+            <p class="install-note" id="download-store-note" data-i18n="download.noteNoStore">
+              Link Store non ancora configurato: usa lo ZIP e la guida qui a fianco.
+            </p>
+            <p class="ext-note" data-i18n-html="download.tokenNote">
+              Serve un <b>API token CardTrader</b> (Impostazioni profilo → API). Incollalo nell’estensione e premi Salva.
+              Il token resta in locale sul tuo Chrome.
+            </p>
+          </div>
 
+          <div class="panel">
+            <h3 data-i18n="download.guideTitle">Guida installazione (Chrome)</h3>
+            <p class="hint" style="margin-bottom:1rem" data-i18n="download.guideHint">
+              Metodo “Carica estensione non pacchettizzata” — ideale in attesa della pubblicazione sullo Store.
+            </p>
+            <ol class="steps">
+              <li>
+                <span class="step-num">1</span>
+                <div>
+                  <strong data-i18n="download.s1t">Scarica e scompatta lo ZIP</strong>
+                  <span data-i18n-html="download.s1d">Ottieni la cartella dell’estensione (deve contenere <code>manifest.json</code>).</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <div>
+                  <strong data-i18n="download.s2t">Apri le estensioni Chrome</strong>
+                  <span data-i18n-html="download.s2d">Nella barra indirizzi vai su <span class="kbd">chrome://extensions</span> e premi Invio.</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <div>
+                  <strong data-i18n="download.s3t">Attiva Modalità sviluppatore</strong>
+                  <span data-i18n-html="download.s3d">In alto a destra attiva l’interruttore <b>Modalità sviluppatore</b>.</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">4</span>
+                <div>
+                  <strong data-i18n="download.s4t">Carica non pacchettizzata</strong>
+                  <span data-i18n-html="download.s4d">Clicca <b>Carica estensione non pacchettizzata</b> e seleziona la cartella scompattata (quella con <code>manifest.json</code>).</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">5</span>
+                <div>
+                  <strong data-i18n="download.s5t">Fissa l’icona e configura</strong>
+                  <span data-i18n-html="download.s5d">Apri Crometium TCG dal puzzle delle estensioni, inserisci l’API token CardTrader → <b>Salva</b>, poi aggiungi le carte in watchlist.</span>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">6</span>
+                <div>
+                  <strong data-i18n="download.s6t">(Opzionale) Attiva Pro</strong>
+                  <span data-i18n-html="download.s6d">Hai 30 giorni di trial. Poi acquista qui sotto e incolla la license key in Impostazioni, oppure usa la sezione <a href="#attiva">Attiva chiave</a>.</span>
+                </div>
+              </li>
+            </ol>
+            <p class="install-note" data-i18n-html="download.tip">
+              Suggerimento: lascia Chrome aperto affinché il controllo prezzi (alarm) possa girare.
+              Dopo ogni aggiornamento ZIP, in <span class="kbd">chrome://extensions</span> premi <b>Aggiorna</b> sull’estensione.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="survey" id="sondaggio">
+      <div class="wrap">
+        <p class="section-kicker" data-i18n="survey.kicker">Sondaggio</p>
+        <h2 class="section-title" data-i18n="survey.title">Quanto pagheresti, e per quanto la useresti?</h2>
+        <p class="section-lead" data-i18n="survey.lead">
+          Aiutaci a tarare i prezzi di lancio. Risposte anonime — circa 20 secondi. I risultati locali si aggiornano subito qui a fianco.
+        </p>
+
+        <div class="survey-grid">
+          <div class="panel">
+            <form id="survey-form" novalidate>
+              <div class="survey-q-block">
+                <p class="survey-q" data-i18n="survey.q1">1. Quanto saresti disposto a spendere per Pro?</p>
+                <div class="survey-options" role="radiogroup" data-i18n-aria="survey.ariaBudget" aria-label="Budget">
+                  <label class="survey-option"><input type="radio" name="spend" value="free_only" required /> <span data-i18n="survey.spend.free_only">Solo Free / non pagherei</span></label>
+                  <label class="survey-option"><input type="radio" name="spend" value="lt3" /> <span data-i18n="survey.spend.lt3">Meno di €3 / mese</span></label>
+                  <label class="survey-option"><input type="radio" name="spend" value="3_5" /> <span data-i18n="survey.spend.3_5">€3–5 / mese</span></label>
+                  <label class="survey-option"><input type="radio" name="spend" value="5_8" /> <span data-i18n="survey.spend.5_8">€5–8 / mese</span></label>
+                  <label class="survey-option"><input type="radio" name="spend" value="gt8" /> <span data-i18n="survey.spend.gt8">Più di €8 / mese</span></label>
+                  <label class="survey-option"><input type="radio" name="spend" value="year_24_30" /> <span data-i18n="survey.spend.year_24_30">Preferisco ~€24–30 una volta l’anno</span></label>
+                </div>
+              </div>
+
+              <div class="survey-q-block">
+                <p class="survey-q" data-i18n="survey.q2">2. Per quanto tempo pensi di usarla?</p>
+                <div class="survey-options cols-2" role="radiogroup" data-i18n-aria="survey.ariaDuration" aria-label="Durata d’uso">
+                  <label class="survey-option"><input type="radio" name="duration" value="1m" required /> <span data-i18n="survey.duration.1m">1 mese (prova)</span></label>
+                  <label class="survey-option"><input type="radio" name="duration" value="3m" /> <span data-i18n="survey.duration.3m">3 mesi (un set / deck)</span></label>
+                  <label class="survey-option"><input type="radio" name="duration" value="6m" /> <span data-i18n="survey.duration.6m">6 mesi</span></label>
+                  <label class="survey-option"><input type="radio" name="duration" value="12m" /> <span data-i18n="survey.duration.12m">1 anno</span></label>
+                  <label class="survey-option"><input type="radio" name="duration" value="ongoing" /> <span data-i18n="survey.duration.ongoing">Finché compro carte</span></label>
+                  <label class="survey-option"><input type="radio" name="duration" value="unsure" /> <span data-i18n="survey.duration.unsure">Non so ancora</span></label>
+                </div>
+              </div>
+
+              <div class="survey-q-block">
+                <p class="survey-q" data-i18n="survey.q3">3. (Opzionale) Quanto spesso snipi / compri su CardTrader?</p>
+                <div class="survey-options cols-2" role="radiogroup" data-i18n-aria="survey.ariaFreq" aria-label="Frequenza">
+                  <label class="survey-option"><input type="radio" name="frequency" value="rare" /> <span data-i18n="survey.frequency.rare">Raro (qualche volta l’anno)</span></label>
+                  <label class="survey-option"><input type="radio" name="frequency" value="monthly" /> <span data-i18n="survey.frequency.monthly">Ogni mese</span></label>
+                  <label class="survey-option"><input type="radio" name="frequency" value="weekly" /> <span data-i18n="survey.frequency.weekly">Ogni settimana</span></label>
+                  <label class="survey-option"><input type="radio" name="frequency" value="daily" /> <span data-i18n="survey.frequency.daily">Quasi ogni giorno</span></label>
+                </div>
+              </div>
+
+              <div class="field" style="margin-top:0.5rem">
+                <label for="survey-note" data-i18n="survey.noteLabel">Commento libero (opzionale)</label>
+                <input id="survey-note" name="note" type="text" maxlength="240" data-i18n-placeholder="survey.notePlaceholder" placeholder="Es. mi interessa soprattutto l’auto-cart…" />
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="survey-submit" data-i18n="survey.submit">Invia risposta</button>
+              <div id="survey-status" class="status-box" role="status" aria-live="polite"></div>
+            </form>
+
+            <div class="survey-thanks" id="survey-thanks">
+              <h3 data-i18n="survey.thanksTitle">Grazie — risposta registrata</h3>
+              <p class="hint" style="margin:0" data-i18n-html="survey.thanksBody">
+                Puoi comunque <a href="#piani">vedere i prezzi</a> o <a href="#download">installare</a> l’estensione. Il trial Pro è di 30 giorni.
+              </p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3 data-i18n="survey.resultsTitle">Risultati (questo browser)</h3>
+            <p class="hint" data-i18n-html="survey.resultsHint">Conteggio anonimo salvato in locale. Con <code>surveyApiUrl</code> le risposte vanno anche al tuo backend.</p>
+            <p class="survey-q" style="margin-top:1rem" data-i18n="survey.budgetDeclared">Budget dichiarato</p>
+            <ul class="tally" id="tally-spend"></ul>
+            <p class="survey-q" style="margin-top:1.1rem" data-i18n="survey.durationDeclared">Durata d’uso</p>
+            <ul class="tally" id="tally-duration"></ul>
+            <p class="install-note" id="survey-count" data-i18n="survey.count0">Nessuna risposta ancora.</p>
+          </div>
+        </div>
       </div>
     </section>
 
     <section class="compare" id="piani">
       <div class="wrap">
-        <p class="section-kicker">Abbonamenti Pro</p>
-        <h2 class="section-title">Mensile, 3 mesi o 1 anno</h2>
-        <p class="section-lead">
+        <p class="section-kicker" data-i18n="plans.kicker">Abbonamenti Pro</p>
+        <h2 class="section-title" data-i18n="plans.title">Mensile, 3 mesi o 1 anno</h2>
+        <p class="section-lead" data-i18n="plans.lead">
           Stesse feature Pro su tutti i piani. Offerta di lancio sull’annuale: listino barrato + sconto. Paghi con PayPal e ricevi la key via email.
         </p>
 
@@ -841,41 +1190,168 @@
       </div>
     </section>
 
+    <section class="compare" id="confronta">
+      <div class="wrap">
+        <p class="section-kicker" data-i18n="compare.kicker">Differenze</p>
+        <h2 class="section-title" data-i18n="compare.title">Velocità e potenza: Free vs Pro</h2>
+        <p class="section-lead" data-i18n="compare.lead">
+          Il polling è il cuore dello sniper: in Free è fisso a 20′. In Pro scegli da 3 a 5 minuti, più canali, auto-cart e grafici lunghi.
+        </p>
+
+        <p class="section-kicker" data-i18n="compare.speedKicker" style="margin-top:0.5rem">Frequenza check</p>
+        <div class="speed-split" aria-label="Polling Free vs Pro">
+          <div class="speed-tier">
+            <p class="tier-label" data-i18n="compare.speedFreeLabel">Free</p>
+            <p class="tier-value" data-i18n="compare.speedFreeValue">ogni 20 min</p>
+            <p class="tier-note" data-i18n="compare.pollFree">fisso 20 minuti</p>
+          </div>
+          <div class="speed-tier pro">
+            <p class="tier-label" data-i18n="compare.speedProLabel">Pro</p>
+            <p class="tier-value" data-i18n="compare.speedProValue">ogni 3–5 min</p>
+            <p class="tier-note" data-i18n="compare.pollPro">da 3 a 5 minuti</p>
+          </div>
+        </div>
+
+        <h3 class="compare-more" data-i18n="compare.moreTitle">Altre differenze</h3>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th data-i18n="compare.thFeature">Funzionalità</th>
+              <th data-i18n="compare.thFree">Free</th>
+              <th class="pro-col" data-i18n="compare.thPro">Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feature-name" data-i18n="compare.watchlist">Watchlist</td>
+              <td class="cell-free" data-i18n="compare.watchlistFree">max 5 carte</td>
+              <td class="cell-pro" data-i18n="compare.watchlistPro">fino a 100 carte</td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.channels">Canali CT Zero / Normale</td>
+              <td class="cell-free" data-i18n="compare.channelsFree">uno solo alla volta</td>
+              <td class="cell-pro" data-i18n="compare.channelsPro">entrambi insieme</td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.alert">Alert</td>
+              <td class="cell-free" data-i18n="compare.alertFree">notifica browser</td>
+              <td class="cell-pro" data-i18n="compare.alertPro">notifica + suono</td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.autocart">Auto-cart</td>
+              <td class="cell-free"><span class="cross">—</span></td>
+              <td class="cell-pro" data-i18n="compare.autocartPro">✓ abilitato</td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.charts">Grafici storico</td>
+              <td class="cell-free" data-i18n="compare.chartsFree">solo Giorno</td>
+              <td class="cell-pro" data-i18n="compare.chartsPro">Giorno / Settimana / Mese</td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.expand">Watchlist a schermo intero</td>
+              <td class="cell-free"><span class="cross">—</span></td>
+              <td class="cell-pro"><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.debug">Debug API</td>
+              <td class="cell-free"><span class="cross">—</span></td>
+              <td class="cell-pro"><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.langs">Lingue IT / EN / ES</td>
+              <td class="cell-free"><span class="check">✓</span></td>
+              <td class="cell-pro"><span class="check">✓</span></td>
+            </tr>
+            <tr>
+              <td class="feature-name" data-i18n="compare.trial">Trial all’installazione</td>
+              <td class="cell-free" colspan="2" style="color:var(--slate)" data-i18n="compare.trialValue">30 giorni Pro inclusi, poi Free o license key</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+    </section>
+
+    <section class="activate" id="attiva">
+      <div class="wrap">
+        <p class="section-kicker" data-i18n="activate.kicker">Licenza</p>
+        <h2 class="section-title" data-i18n="activate.title">Hai già una chiave? Attivala</h2>
+        <p class="section-lead" data-i18n="activate.lead">
+          Incolla la license key ricevuta via email. Preferibilmente attivala dal popup dell’estensione
+          (tab Impostazioni); qui sotto puoi verificare la key se l’API è configurata.
+        </p>
+
+        <div class="activate-grid">
+          <div class="panel">
+            <h3 data-i18n="activate.panelTitle">Attiva license key</h3>
+            <p class="hint" data-i18n-html="activate.hint">Formato tipico: <code>XXXX-XXXX-XXXX</code></p>
+            <form id="activate-form" novalidate>
+              <div class="field" id="field-key">
+                <label for="license-key" data-i18n="activate.keyLabel">License key</label>
+                <input id="license-key" name="licenseKey" type="text" autocomplete="off" spellcheck="false" required data-i18n-placeholder="activate.keyPh" placeholder="PRO-…" />
+                <div class="field-error" data-i18n="activate.keyErr">Inserisci una license key</div>
+              </div>
+              <button type="submit" class="btn btn-dark btn-block" data-i18n="activate.submit">Verifica / attiva</button>
+              <div id="activate-status" class="status-box" role="status" aria-live="polite"></div>
+            </form>
+          </div>
+          <div class="panel">
+            <h3 data-i18n="activate.chromeTitle">Nell’estensione Chrome</h3>
+            <p class="hint" style="margin-bottom:1rem" data-i18n="activate.chromeHint">Il modo consigliato per sbloccare Pro sul browser:</p>
+            <ol class="steps">
+              <li>
+                <span class="step-num">1</span>
+                <div><strong data-i18n="activate.s1t">Apri Crometium TCG</strong><span data-i18n="activate.s1d">Clicca l’icona dell’estensione.</span></div>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <div><strong data-i18n="activate.s2t">Vai su Impostazioni</strong><span data-i18n="activate.s2d">Sezione licenza Pro.</span></div>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <div><strong data-i18n="activate.s3t">Incolla e Attiva</strong><span data-i18n="activate.s3d">Il badge passerà a Pro se la key è valida.</span></div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="checkout" id="acquista">
       <div class="wrap">
-        <p class="section-kicker">Checkout</p>
-        <h2 class="section-title">Registrati e paga con PayPal</h2>
-        <p class="section-lead">
+        <p class="section-kicker" data-i18n="checkout.kicker">Checkout</p>
+        <h2 class="section-title" data-i18n="checkout.title">Registrati e paga con PayPal</h2>
+        <p class="section-lead" data-i18n="checkout.lead">
           Scegli la durata, inserisci i dati e completa il pagamento: la license key arriva via email.
         </p>
 
         <div class="checkout-grid">
           <div class="panel">
-            <h3>Abbonamento e dati</h3>
-            <p class="hint">Useremo l’email solo per consegnare la license key e assistenza sull’ordine.</p>
+            <h3 data-i18n="checkout.panelTitle">Abbonamento e dati</h3>
+            <p class="hint" data-i18n="checkout.panelHint">Useremo l’email solo per consegnare la license key e assistenza sull’ordine.</p>
 
             <form id="checkout-form" novalidate>
               <fieldset class="plan-picker" id="plan-picker">
                 <legend class="field" style="margin-bottom:0.5rem;padding:0;border:0">
-                  <span style="font-size:0.85rem;font-weight:600;color:var(--slate)">Durata abbonamento</span>
+                  <span style="font-size:0.85rem;font-weight:600;color:var(--slate)" data-i18n="checkout.durationLegend">Durata abbonamento</span>
                 </legend>
                 <!-- opzioni riempite da CONFIG -->
               </fieldset>
 
               <div class="field" id="field-name">
-                <label for="buyer-name">Nome e cognome</label>
-                <input id="buyer-name" name="name" type="text" autocomplete="name" required placeholder="Mario Rossi" />
-                <div class="field-error">Inserisci il nome</div>
+                <label for="buyer-name" data-i18n="checkout.name">Nome e cognome</label>
+                <input id="buyer-name" name="name" type="text" autocomplete="name" required data-i18n-placeholder="checkout.namePh" placeholder="Mario Rossi" />
+                <div class="field-error" data-i18n="checkout.nameErr">Inserisci il nome</div>
               </div>
               <div class="field" id="field-email">
-                <label for="buyer-email">Email</label>
-                <input id="buyer-email" name="email" type="email" autocomplete="email" required placeholder="tu@email.com" />
-                <div class="field-error">Inserisci un’email valida</div>
+                <label for="buyer-email" data-i18n="checkout.email">Email</label>
+                <input id="buyer-email" name="email" type="email" autocomplete="email" required data-i18n-placeholder="checkout.emailPh" placeholder="tu@email.com" />
+                <div class="field-error" data-i18n="checkout.emailErr">Inserisci un’email valida</div>
               </div>
               <div class="field" id="field-email2">
-                <label for="buyer-email2">Conferma email</label>
-                <input id="buyer-email2" name="email2" type="email" autocomplete="email" required placeholder="Ripeti l’email" />
-                <div class="field-error">Le email non coincidono</div>
+                <label for="buyer-email2" data-i18n="checkout.email2">Conferma email</label>
+                <input id="buyer-email2" name="email2" type="email" autocomplete="email" required data-i18n-placeholder="checkout.email2Ph" placeholder="Ripeti l’email" />
+                <div class="field-error" data-i18n="checkout.email2Err">Le email non coincidono</div>
               </div>
 
               <div class="order-summary">
@@ -883,7 +1359,7 @@
                 <strong id="summary-amount">€24,00</strong>
               </div>
 
-              <p class="paypal-gate" id="paypal-gate">Compila il form per abilitare PayPal.</p>
+              <p class="paypal-gate" id="paypal-gate" data-i18n="checkout.paypalGate">Compila il form per abilitare PayPal.</p>
               <div id="paypal-button-container" class="disabled"></div>
               <div id="checkout-status" class="status-box" role="status" aria-live="polite"></div>
             </form>
@@ -894,33 +1370,33 @@
               <li>
                 <span class="step-num">1</span>
                 <div>
-                  <strong>Registrati</strong>
-                  <span>Nome ed email dove ricevere la chiave.</span>
+                  <strong data-i18n="checkout.step1t">Registrati</strong>
+                  <span data-i18n="checkout.step1d">Nome ed email dove ricevere la chiave.</span>
                 </div>
               </li>
               <li>
                 <span class="step-num">2</span>
                 <div>
-                  <strong>Paga con PayPal</strong>
-                  <span>Checkout sicuro. Nessuna carta gestita da questa pagina.</span>
+                  <strong data-i18n="checkout.step2t">Paga con PayPal</strong>
+                  <span data-i18n="checkout.step2d">Checkout sicuro. Nessuna carta gestita da questa pagina.</span>
                 </div>
               </li>
               <li>
                 <span class="step-num">3</span>
                 <div>
-                  <strong>Ricevi la key via email</strong>
-                  <span>Di solito entro pochi minuti dopo la conferma pagamento.</span>
+                  <strong data-i18n="checkout.step3t">Ricevi la key via email</strong>
+                  <span data-i18n="checkout.step3d">Di solito entro pochi minuti dopo la conferma pagamento.</span>
                 </div>
               </li>
               <li>
                 <span class="step-num">4</span>
                 <div>
-                  <strong>Attiva nell’estensione</strong>
-                  <span>Impostazioni → incolla la key → Attiva. Oppure usa il box qui sotto.</span>
+                  <strong data-i18n="checkout.step4t">Attiva nell’estensione</strong>
+                  <span data-i18n="checkout.step4d">Impostazioni → incolla la key → Attiva. Oppure usa il box qui sotto.</span>
                 </div>
               </li>
             </ol>
-            <p class="ext-note">
+            <p class="ext-note" data-i18n="checkout.devNote">
               In sviluppo, senza PayPal Client ID configurato, puoi usare il pulsante di simulazione
               (non genera una chiave reale). In produzione il backend crea la licenza dal webhook PayPal
               e la invia all’email indicata.
@@ -930,59 +1406,16 @@
       </div>
     </section>
 
-    <section class="activate" id="attiva">
-      <div class="wrap">
-        <p class="section-kicker">Licenza</p>
-        <h2 class="section-title">Hai già una chiave? Attivala</h2>
-        <p class="section-lead">
-          Incolla la license key ricevuta via email. Preferibilmente attivala dal popup dell’estensione
-          (tab Impostazioni); qui sotto puoi verificare la key se l’API è configurata.
-        </p>
-
-        <div class="activate-grid">
-          <div class="panel">
-            <h3>Attiva license key</h3>
-            <p class="hint">Formato tipico: <code>XXXX-XXXX-XXXX</code></p>
-            <form id="activate-form" novalidate>
-              <div class="field" id="field-key">
-                <label for="license-key">License key</label>
-                <input id="license-key" name="licenseKey" type="text" autocomplete="off" spellcheck="false" required placeholder="PRO-…" />
-                <div class="field-error">Inserisci una license key</div>
-              </div>
-              <button type="submit" class="btn btn-dark btn-block">Verifica / attiva</button>
-              <div id="activate-status" class="status-box" role="status" aria-live="polite"></div>
-            </form>
-          </div>
-          <div class="panel">
-            <h3>Nell’estensione Chrome</h3>
-            <p class="hint" style="margin-bottom:1rem">Il modo consigliato per sbloccare Pro sul browser:</p>
-            <ol class="steps">
-              <li>
-                <span class="step-num">1</span>
-                <div><strong>Apri Crometium TCG</strong><span>Clicca l’icona dell’estensione.</span></div>
-              </li>
-              <li>
-                <span class="step-num">2</span>
-                <div><strong>Vai su Impostazioni</strong><span>Sezione licenza Pro.</span></div>
-              </li>
-              <li>
-                <span class="step-num">3</span>
-                <div><strong>Incolla e Attiva</strong><span>Il badge passerà a Pro se la key è valida.</span></div>
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer>
     <div class="wrap">
-      <div><strong>Crometium TCG</strong> — price alerts per CardTrader</div>
+      <div data-i18n-html="footer.tagline"><strong>Crometium TCG</strong> — price alerts per CardTrader</div>
       <div id="footer-pricing">Pro · PayPal · key via email</div>
     </div>
   </footer>
 
+  <script src="locales.js"></script>
   <script>
     /**
      * Configurazione produzione — modifica questi valori prima del deploy.
@@ -1018,8 +1451,41 @@
       /** Se true e manca paypalClientId, mostra pulsante simulazione */
       allowDevSimulate: true,
 
+      /**
+       * Download / install.
+       * chromeStoreUrl: lascia "" finché non è pubblicato; poi es. "https://chromewebstore.google.com/detail/…"
+       * zipUrl: URL pubblico dello ZIP store-ready (es. GitHub Release o CDN).
+       */
+      chromeStoreUrl: "",
+      zipUrl: "CrometiumTCG-0.8-chrome.zip",
+
+      /**
+       * Contatore download ZIP (visibile sotto il bottone).
+       * - localStorage: cache locale
+       * - CounterAPI (default): totale globale senza tuo backend
+       *   Cambia namespace/key se forki; oppure metti "" e usa solo locale / tuo API.
+       */
+      downloadCountStorageKey: "crometium_downloads_v1",
+      downloadCountGetUrl: "https://api.counterapi.dev/v1/crometium-tcg/zip-downloads",
+      downloadCountHitUrl: "https://api.counterapi.dev/v1/crometium-tcg/zip-downloads/up",
+
+      /**
+       * Sondaggio pricing: se valorizzato, POST JSON della risposta.
+       * In ogni caso aggrega in localStorage (chiave sotto).
+       */
+      surveyApiUrl: "", // es. "https://api.crometium.example/v1/survey"
+      surveyStorageKey: "crometium_survey_v1",
+
       /** Popolato da buildPlans() */
       plans: {}
+    };
+
+    const I18N = window.PricingI18n;
+    const t = (key, params) => (I18N ? I18N.t(key, params) : key);
+    const localeBcp47 = () => {
+      const map = { it: "it-IT", en: "en-US", es: "es-ES" };
+      const loc = I18N ? I18N.getLocale() : "it";
+      return map[loc] || "it-IT";
     };
 
     function roundMoney(n) {
@@ -1029,16 +1495,15 @@
     function formatEuro(n) {
       return (
         "€" +
-        roundMoney(n).toLocaleString("it-IT", {
+        roundMoney(n).toLocaleString(localeBcp47(), {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
         })
       );
     }
 
-    function perMonthLabel(amount, months) {
-      const pm = roundMoney(amount / months);
-      return "≈ " + formatEuro(pm) + "/mese";
+    function perMonthAmount(amount, months) {
+      return formatEuro(roundMoney(amount / months));
     }
 
     function buildPlans() {
@@ -1049,66 +1514,63 @@
       const yearPaid = roundMoney(list * (1 - disc / 100));
       const savedOnList = roundMoney(list - yearPaid);
       const vsMonthlyYear = roundMoney(month * 12);
+      const threePer = perMonthAmount(three, 3);
+      const yearPer = perMonthAmount(yearPaid, 12);
 
       CONFIG.plans = {
         month: {
           id: "month",
-          name: "Mensile",
-          shortName: "Mensile",
-          label: "Crometium TCG Pro — 1 mese",
+          name: t("plans.month.name"),
+          shortName: t("plans.month.name"),
+          label: t("plans.labelMonth"),
           amount: month.toFixed(2),
           displayAmount: formatEuro(month),
           months: 1,
-          period: "/ mese",
-          equiv: "Flessibile, rinnovo ogni 30 giorni",
-          note: "Ideale per provare Pro oltre il trial senza impegno lungo.",
-          cta: "Scegli mensile",
-          optSub: "1 mese di Pro",
+          period: t("plans.month.period"),
+          equiv: t("plans.month.equiv"),
+          note: t("plans.month.note"),
+          cta: t("plans.month.cta"),
+          optSub: t("plans.optSubMonth"),
           featured: false,
           listPrice: null,
           discountPercent: 0
         },
         "3m": {
           id: "3m",
-          name: "3 mesi",
-          shortName: "3 mesi",
-          label: "Crometium TCG Pro — 3 mesi",
+          name: t("plans.3m.name"),
+          shortName: t("plans.3m.name"),
+          label: t("plans.label3m"),
           amount: three.toFixed(2),
           displayAmount: formatEuro(three),
           months: 3,
-          period: "/ 3 mesi",
-          equiv: perMonthLabel(three, 3) + " · vs " + formatEuro(month * 3) + " a mensili",
-          note: "Perfetto per un set, un deck o un evento in corso.",
-          cta: "Scegli 3 mesi",
-          optSub: perMonthLabel(three, 3),
+          period: t("plans.3m.period"),
+          equiv:
+            t("plans.3m.equivPrefix", { perMonth: threePer }) +
+            t("plans.3m.vsMonthly", { amount: formatEuro(month * 3) }),
+          note: t("plans.3m.note"),
+          cta: t("plans.3m.cta"),
+          optSub: t("plans.optSub3m", { amount: threePer }),
           featured: false,
           listPrice: null,
           discountPercent: 0
         },
         year: {
           id: "year",
-          name: "1 anno",
-          shortName: "1 anno",
-          label: "Crometium TCG Pro — 12 mesi",
+          name: t("plans.year.name"),
+          shortName: t("plans.year.name"),
+          label: t("plans.labelYear"),
           amount: yearPaid.toFixed(2),
           displayAmount: formatEuro(yearPaid),
           months: 12,
-          period: "/ anno",
-          equiv:
-            perMonthLabel(yearPaid, 12) +
-            " · offerta di lancio −" +
-            disc +
-            "%",
-          note:
-            "Listino " +
-            formatEuro(list) +
-            ", paghi " +
-            formatEuro(yearPaid) +
-            " (risparmi " +
-            formatEuro(savedOnList) +
-            "). License key annuale via email.",
-          cta: "Scegli 1 anno",
-          optSub: perMonthLabel(yearPaid, 12) + " · −" + disc + "%",
+          period: t("plans.year.period"),
+          equiv: t("plans.year.equivLaunch", { perMonth: yearPer, pct: disc }),
+          note: t("plans.year.note", {
+            list: formatEuro(list),
+            paid: formatEuro(yearPaid),
+            saved: formatEuro(savedOnList)
+          }),
+          cta: t("plans.year.cta"),
+          optSub: t("plans.perMonth", { amount: yearPer }) + " · −" + disc + "%",
           featured: true,
           listPrice: list,
           listDisplay: formatEuro(list),
@@ -1140,7 +1602,7 @@
               ? `<p class="plan-price-was"><s>${escapeHtml(p.listDisplay)}</s><span class="discount-pill">−${p.discountPercent}%</span></p>`
               : "";
           return `<article class="plan${p.featured ? " featured" : ""}">
-            ${p.featured ? '<span class="plan-badge">Consigliato</span>' : ""}
+            ${p.featured ? `<span class="plan-badge">${escapeHtml(t("plans.badgeRecommended"))}</span>` : ""}
             <h3 class="plan-name">${escapeHtml(p.name)}</h3>
             ${was}
             <p class="plan-price">${escapeHtml(p.displayAmount)} <span>${escapeHtml(p.period)}</span></p>
@@ -1166,7 +1628,7 @@
           <input type="radio" name="plan" value="${p.id}" ${id === CONFIG.defaultPlanId ? "checked" : ""} />
           <span class="radio" aria-hidden="true"></span>
           <span>
-            <span class="opt-title">${escapeHtml(p.shortName)}${p.featured ? ' <span class="opt-tag">Best</span>' : ""}</span>
+            <span class="opt-title">${escapeHtml(p.shortName)}${p.featured ? ` <span class="opt-tag">${escapeHtml(t("plans.badgeBest"))}</span>` : ""}</span>
             <span class="opt-sub">${escapeHtml(p.optSub)}</span>
           </span>
           ${priceHtml}
@@ -1180,25 +1642,123 @@
 
       const footer = document.getElementById("footer-pricing");
       const y = CONFIG.plans.year;
-      footer.textContent =
-        "Pro da " +
-        CONFIG.plans.month.displayAmount +
-        "/mese · 3 mesi " +
-        CONFIG.plans["3m"].displayAmount +
-        " · anno " +
-        y.displayAmount +
-        " (−" +
-        y.discountPercent +
-        "% su " +
-        y.listDisplay +
-        ") · PayPal · key via email";
+      footer.textContent = t("footer.pricing", {
+        month: CONFIG.plans.month.displayAmount,
+        three: CONFIG.plans["3m"].displayAmount,
+        year: y.displayAmount,
+        pct: y.discountPercent,
+        list: y.listDisplay
+      });
 
       cards.querySelectorAll("[data-select-plan]").forEach((el) => {
         el.addEventListener("click", () => selectPlan(el.getAttribute("data-select-plan")));
       });
     }
 
-    buildPlans();
+    function wireDownloadLinks() {
+      const storeBtn = document.getElementById("btn-chrome-store");
+      const zipBtn = document.getElementById("btn-download-zip");
+      const note = document.getElementById("download-store-note");
+
+      if (CONFIG.chromeStoreUrl) {
+        storeBtn.href = CONFIG.chromeStoreUrl;
+        storeBtn.removeAttribute("aria-disabled");
+        note.textContent = t("download.noteStoreOk");
+      } else {
+        storeBtn.href = "#download";
+        storeBtn.setAttribute("aria-disabled", "true");
+        storeBtn.onclick = (e) => e.preventDefault();
+        note.textContent = t("download.noteNoStore");
+      }
+
+      if (CONFIG.zipUrl) {
+        zipBtn.href = CONFIG.zipUrl;
+        zipBtn.removeAttribute("aria-disabled");
+        zipBtn.onclick = () => {
+          recordZipDownload();
+        };
+      } else {
+        zipBtn.href = "#download";
+        zipBtn.setAttribute("aria-disabled", "true");
+        zipBtn.onclick = (e) => {
+          e.preventDefault();
+          note.textContent = t("download.noteZipMissing");
+        };
+        if (!CONFIG.chromeStoreUrl) {
+          note.textContent = t("download.noteNoStore") + " " + t("download.noteZipHint");
+        }
+      }
+
+      renderDownloadCount(readLocalDownloadCount());
+    }
+
+    function readLocalDownloadCount() {
+      try {
+        const raw = localStorage.getItem(CONFIG.downloadCountStorageKey);
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function writeLocalDownloadCount(n) {
+      try {
+        localStorage.setItem(CONFIG.downloadCountStorageKey, String(Math.max(0, Math.floor(n))));
+      } catch (_) {
+        /* ignore quota */
+      }
+    }
+
+    function renderDownloadCount(n) {
+      const el = document.getElementById("download-count");
+      if (!el) return;
+      const count = Number(n) || 0;
+      if (count <= 0) el.textContent = t("download.count0");
+      else if (count === 1) el.innerHTML = t("download.count1");
+      else el.innerHTML = t("download.countN", { n: String(count) });
+    }
+
+    function parseRemoteCount(payload) {
+      if (payload == null) return null;
+      if (typeof payload === "number" && Number.isFinite(payload)) return Math.floor(payload);
+      const n = Number(payload.count ?? payload.value ?? payload.Value);
+      return Number.isFinite(n) ? Math.floor(n) : null;
+    }
+
+    async function fetchRemoteDownloadCount(url) {
+      if (!url) return null;
+      try {
+        const res = await fetch(url, { method: "GET", cache: "no-store" });
+        if (!res.ok) return null;
+        const data = await res.json().catch(() => null);
+        return parseRemoteCount(data);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function initDownloadCount() {
+      const local = readLocalDownloadCount();
+      renderDownloadCount(local);
+      const remote = await fetchRemoteDownloadCount(CONFIG.downloadCountGetUrl);
+      if (remote != null) {
+        writeLocalDownloadCount(Math.max(local, remote));
+        renderDownloadCount(Math.max(local, remote));
+      }
+    }
+
+    async function recordZipDownload() {
+      const localNext = readLocalDownloadCount() + 1;
+      writeLocalDownloadCount(localNext);
+      renderDownloadCount(localNext);
+
+      const remote = await fetchRemoteDownloadCount(CONFIG.downloadCountHitUrl);
+      if (remote != null) {
+        writeLocalDownloadCount(Math.max(localNext, remote));
+        renderDownloadCount(Math.max(localNext, remote));
+      }
+    }
 
     const form = document.getElementById("checkout-form");
     const nameInput = document.getElementById("buyer-name");
@@ -1238,11 +1798,11 @@
           escapeHtml(plan.listDisplay) +
           "</span>" +
           escapeHtml(plan.displayAmount) +
-          '<span class="sum-disc">Offerta di lancio −' +
-          plan.discountPercent +
-          "% (−" +
-          escapeHtml(plan.savedDisplay) +
-          ")</span>";
+          '<span class="sum-disc">' +
+          escapeHtml(
+            t("msg.launchOffer", { pct: plan.discountPercent, saved: plan.savedDisplay })
+          ) +
+          "</span>";
       } else {
         summaryAmount.textContent = plan.displayAmount;
       }
@@ -1292,10 +1852,10 @@
     function setPaypalEnabled(enabled) {
       paypalBox.classList.toggle("disabled", !enabled);
       if (enabled) {
-        paypalGate.textContent = "PayPal pronto — completa il pagamento.";
+        paypalGate.textContent = t("checkout.paypalReady");
         paypalGate.classList.add("ready");
       } else {
-        paypalGate.textContent = "Compila il form per abilitare PayPal.";
+        paypalGate.textContent = t("checkout.paypalGate");
         paypalGate.classList.remove("ready");
       }
     }
@@ -1316,8 +1876,7 @@
         return {
           ok: true,
           queued: false,
-          message:
-            "Pagamento registrato in pagina. Configura orderApiUrl sul server per generare e inviare la license key via email."
+          message: t("msg.orderNoApi")
         };
       }
       const res = await fetch(CONFIG.orderApiUrl, {
@@ -1347,11 +1906,11 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn btn-primary btn-block";
-      btn.textContent = "Simula pagamento PayPal (dev)";
+      btn.textContent = t("msg.paypalSimBtn");
       btn.addEventListener("click", async () => {
         if (!validateCheckoutFields()) {
           setPaypalEnabled(false);
-          showStatus(checkoutStatus, "err", "Compila correttamente nome ed email.");
+          showStatus(checkoutStatus, "err", t("msg.paypalFill"));
           return;
         }
         const buyer = buyerPayload();
@@ -1359,7 +1918,7 @@
         showStatus(
           checkoutStatus,
           "warn",
-          "Simulazione OK — " + plan.label + " per " + buyer.email + ". In produzione PayPal + webhook inviano la chiave reale."
+          t("msg.paypalSim", { plan: plan.label, email: buyer.email })
         );
       });
       paypalBox.appendChild(btn);
@@ -1391,14 +1950,14 @@
           showStatus(
             checkoutStatus,
             "warn",
-            "PayPal Client ID non configurato: modalità sviluppo attiva."
+            t("msg.paypalDev")
           );
         } else {
           paypalBox.innerHTML = "";
           showStatus(
             checkoutStatus,
             "err",
-            "Checkout non disponibile: manca la configurazione PayPal."
+            t("msg.paypalMissing")
           );
         }
         return;
@@ -1418,7 +1977,7 @@
             onClick: (data, actions) => {
               if (!validateCheckoutFields()) {
                 setPaypalEnabled(false);
-                showStatus(checkoutStatus, "err", "Compila nome ed email prima di pagare.");
+                showStatus(checkoutStatus, "err", t("msg.paypalFillBefore"));
                 return actions.reject();
               }
               return actions.resolve();
@@ -1460,29 +2019,29 @@
                   checkoutStatus,
                   "ok",
                   backend.message ||
-                    ("Pagamento riuscito. Controlla " + email + " per la license key (anche spam).")
+                    t("msg.paypalOk", { email: email })
                 );
               } catch (err) {
                 console.error(err);
                 showStatus(
                   checkoutStatus,
                   "err",
-                  "Pagamento catturato ma consegna chiave non confermata. Contattaci con l’ID ordine PayPal."
+                  t("msg.paypalCaptureFail")
                 );
               }
             },
             onError: (err) => {
               console.error(err);
-              showStatus(checkoutStatus, "err", "Errore PayPal. Riprova tra poco.");
+              showStatus(checkoutStatus, "err", t("msg.paypalErr"));
             },
             onCancel: () => {
-              showStatus(checkoutStatus, "warn", "Pagamento annullato.");
+              showStatus(checkoutStatus, "warn", t("msg.paypalCancel"));
             }
           })
           .render("#paypal-button-container");
       } catch (err) {
         console.error(err);
-        showStatus(checkoutStatus, "err", err.message || "PayPal non disponibile");
+        showStatus(checkoutStatus, "err", err.message || t("msg.paypalErr"));
         if (CONFIG.allowDevSimulate) renderDevSimulateButton();
       }
     }
@@ -1493,21 +2052,17 @@
       const field = document.getElementById("field-key");
       field.classList.toggle("invalid", !key);
       if (!key) {
-        showStatus(activateStatus, "err", "Inserisci una license key.");
+        showStatus(activateStatus, "err", t("msg.activateEmpty"));
         return;
       }
 
       if (!CONFIG.licenseApiBase) {
-        showStatus(
-          activateStatus,
-          "warn",
-          "API non configurata su questa pagina. Apri Crometium TCG → Impostazioni, incolla la key e premi Attiva. In dev funziona anche PRO-DEV-…"
-        );
+        showStatus(activateStatus, "warn", t("msg.activateNoApi"));
         return;
       }
 
       try {
-        showStatus(activateStatus, "warn", "Verifica in corso…");
+        showStatus(activateStatus, "warn", t("msg.activateChecking"));
         const res = await fetch(
           CONFIG.licenseApiBase.replace(/\/$/, "") + "/v1/license/activate",
           {
@@ -1524,18 +2079,14 @@
           showStatus(
             activateStatus,
             "err",
-            data.message || "Chiave non valida o scaduta (" + res.status + ")."
+            data.message || t("msg.activateBad", { status: res.status })
           );
           return;
         }
-        showStatus(
-          activateStatus,
-          "ok",
-          "Chiave valida. Ora attivala anche nel popup dell’estensione per sbloccare Pro su Chrome."
-        );
+        showStatus(activateStatus, "ok", t("msg.activateOk"));
       } catch (err) {
         console.error(err);
-        showStatus(activateStatus, "err", "Errore di rete verso l’API licenze.");
+        showStatus(activateStatus, "err", t("msg.activateNet"));
       }
     });
 
@@ -1543,7 +2094,187 @@
       if (e.target && e.target.name === "plan") updateOrderSummary();
     });
 
+    function surveyLabels() {
+      return {
+        spend: {
+          free_only: t("survey.spend.free_only"),
+          lt3: t("survey.spend.lt3"),
+          "3_5": t("survey.spend.3_5"),
+          "5_8": t("survey.spend.5_8"),
+          gt8: t("survey.spend.gt8"),
+          year_24_30: t("survey.spend.year_24_30")
+        },
+        duration: {
+          "1m": t("survey.duration.1m"),
+          "3m": t("survey.duration.3m"),
+          "6m": t("survey.duration.6m"),
+          "12m": t("survey.duration.12m"),
+          ongoing: t("survey.duration.ongoing"),
+          unsure: t("survey.duration.unsure")
+        }
+      };
+    }
+
+    function emptySurveyStore() {
+      return { responses: [], tallies: { spend: {}, duration: {}, frequency: {} } };
+    }
+
+    function readSurveyStore() {
+      try {
+        const raw = localStorage.getItem(CONFIG.surveyStorageKey);
+        if (!raw) return emptySurveyStore();
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.responses)) return emptySurveyStore();
+        data.tallies = data.tallies || { spend: {}, duration: {}, frequency: {} };
+        return data;
+      } catch (_) {
+        return emptySurveyStore();
+      }
+    }
+
+    function writeSurveyStore(data) {
+      localStorage.setItem(CONFIG.surveyStorageKey, JSON.stringify(data));
+    }
+
+    function bumpTally(map, key) {
+      if (!key) return;
+      map[key] = (map[key] || 0) + 1;
+    }
+
+    function renderTally(elId, map, labels) {
+      const el = document.getElementById(elId);
+      const entries = Object.keys(labels).map((k) => [k, map[k] || 0]);
+      const total = entries.reduce((s, [, n]) => s + n, 0) || 1;
+      el.innerHTML = entries
+        .map(([k, n]) => {
+          const pct = Math.round((n / total) * 100);
+          return `<li>
+            <div class="tally-label"><span>${escapeHtml(labels[k])}</span><span>${n} · ${pct}%</span></div>
+            <div class="tally-bar"><span style="width:${pct}%"></span></div>
+          </li>`;
+        })
+        .join("");
+    }
+
+    function refreshSurveyTally() {
+      const store = readSurveyStore();
+      renderTally("tally-spend", store.tallies.spend || {}, surveyLabels().spend);
+      renderTally("tally-duration", store.tallies.duration || {}, surveyLabels().duration);
+      const n = store.responses.length;
+      document.getElementById("survey-count").textContent =
+        n === 0
+          ? t("survey.count0")
+          : n === 1
+            ? t("survey.count1")
+            : t("survey.countN", { n: n });
+    }
+
+    function initSurvey() {
+      const surveyForm = document.getElementById("survey-form");
+      const surveyStatus = document.getElementById("survey-status");
+      const surveyThanks = document.getElementById("survey-thanks");
+      refreshSurveyTally();
+
+      const already = sessionStorage.getItem("crometium_survey_done");
+      if (already === "1") {
+        surveyForm.style.display = "none";
+        surveyThanks.classList.add("show");
+      }
+
+      surveyForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const spend = (surveyForm.querySelector('input[name="spend"]:checked') || {}).value;
+        const duration = (surveyForm.querySelector('input[name="duration"]:checked') || {}).value;
+        const frequency = (surveyForm.querySelector('input[name="frequency"]:checked') || {}).value || "";
+        const note = (document.getElementById("survey-note").value || "").trim();
+
+        if (!spend || !duration) {
+          showStatus(surveyStatus, "err", t("survey.errNeed"));
+          return;
+        }
+
+        const payload = {
+          spend,
+          duration,
+          frequency: frequency || null,
+          note: note || null,
+          at: new Date().toISOString(),
+          page: "pricing",
+          userAgent: navigator.userAgent.slice(0, 180)
+        };
+
+        const store = readSurveyStore();
+        store.responses.push(payload);
+        bumpTally(store.tallies.spend, spend);
+        bumpTally(store.tallies.duration, duration);
+        if (frequency) bumpTally(store.tallies.frequency, frequency);
+        writeSurveyStore(store);
+        refreshSurveyTally();
+
+        if (CONFIG.surveyApiUrl) {
+          try {
+            showStatus(surveyStatus, "warn", t("survey.sending"));
+            const res = await fetch(CONFIG.surveyApiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            showStatus(surveyStatus, "ok", t("survey.okSent"));
+          } catch (err) {
+            console.error(err);
+            showStatus(surveyStatus, "warn", t("survey.warnLocal"));
+          }
+        } else {
+          showStatus(surveyStatus, "ok", t("survey.okLocal"));
+        }
+
+        sessionStorage.setItem("crometium_survey_done", "1");
+        surveyForm.style.display = "none";
+        surveyThanks.classList.add("show");
+      });
+    }
+
+    function syncLangSwitch() {
+      const loc = I18N ? I18N.getLocale() : "it";
+      document.querySelectorAll(".lang-switch button").forEach((btn) => {
+        btn.classList.toggle("active", btn.getAttribute("data-lang") === loc);
+      });
+      const group = document.querySelector(".lang-switch");
+      if (group && I18N) group.setAttribute("aria-label", t("lang.label"));
+    }
+
+    function refreshLocalizedUI() {
+      const selected = (form.querySelector('input[name="plan"]:checked') || {}).value || CONFIG.defaultPlanId;
+      buildPlans();
+      renderPricingUI();
+      wireDownloadLinks();
+      if (CONFIG.plans[selected]) selectPlan(selected);
+      else selectPlan(CONFIG.defaultPlanId);
+      setPaypalEnabled(validateCheckoutFields());
+      refreshSurveyTally();
+      renderDownloadCount(readLocalDownloadCount());
+      syncLangSwitch();
+    }
+
+    document.querySelectorAll(".lang-switch button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!I18N) return;
+        I18N.setLocale(btn.getAttribute("data-lang"));
+      });
+    });
+
+    if (I18N) {
+      I18N.onChange(() => refreshLocalizedUI());
+      I18N.applyDom();
+    }
+
+    buildPlans();
+    wireDownloadLinks();
     renderPricingUI();
+    initDownloadCount();
+    initSurvey();
+    syncLangSwitch();
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("plan") && CONFIG.plans[params.get("plan")]) {

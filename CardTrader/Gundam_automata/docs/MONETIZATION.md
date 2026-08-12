@@ -8,7 +8,7 @@ Un’unica estensione Chrome freemium. Chrome Web Store non offre più pagamenti
 |---|---|---|---|
 | Watchlist | max **5** carte | soft-cap **100** | Demo utile; upgrade quando la lista cresce |
 | Canali | Zero **oppure** Normale (uno solo) | entrambi | Dual-channel = valore sniper |
-| Polling | fisso **5 min** | 1–5 min | Meno carico API in Free |
+| Polling | fisso **20 min** | 3–5 min | Meno carico API in Free; Pro più reattivo |
 | Alert | notifica browser | notifica + **suono** | Power feature percepibile |
 | Auto-cart | bloccato | abilitato | Massimo rischio/valore |
 | Grafici | solo **Giorno** | Giorno / Settimana / Mese + tooltip | Storico lungo = Pro |
@@ -24,7 +24,7 @@ Modulo: [`entitlements.js`](../entitlements.js).
 
 | Stato | Quando |
 |---|---|
-| `pro` (trial) | Primi **15 giorni** da `installAt` |
+| `pro` (trial) | Primi **30 giorni** da `installAt` |
 | `pro` (license) | Licenza attiva (`expiresAt` futuro o lifetime) |
 | `pro` (grace) | Offline ma ultima verifica ok entro **7 giorni** |
 | `free` | Altrimenti |
