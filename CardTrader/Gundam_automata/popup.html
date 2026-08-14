@@ -217,6 +217,37 @@
     .row input[type="number"],
     .row input[type="text"] { flex: 1; }
     .checks { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+    .filter-hint {
+      margin: 0;
+      font-size: 0.72em;
+      color: #888;
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: #eef2f5;
+      border: 1px solid #d0d7de;
+      border-radius: 12px;
+      font-size: 0.75em;
+      cursor: pointer;
+      user-select: none;
+      color: #333;
+    }
+    .filter-chip input { margin: 0; }
+    .filter-chip:has(input:checked) {
+      border-color: #2980b9;
+      background: #d6eaf8;
+      color: #1a5276;
+      font-weight: 600;
+    }
+    .badge.filter { background: #fef9e7; color: #7d6608; }
     input[type="text"], input[type="number"] {
       padding: 8px;
       border: 1px solid #ccc;
@@ -749,6 +780,11 @@
           <label class="check"><input type="checkbox" id="watchZero" checked> <span data-i18n="add.watchZero">CT Zero</span></label>
           <label class="check"><input type="checkbox" id="watchNormal"> <span data-i18n="add.watchNormal">Normale (spedizione diretta)</span></label>
         </div>
+        <div class="section-label" style="margin: 2px 0 0;" data-i18n="add.cardLanguage">Lingua della carta</div>
+        <div class="filter-row" id="cardLanguages"></div>
+        <div class="section-label" style="margin: 2px 0 0;" data-i18n="add.cardCondition">Stato della carta</div>
+        <div class="filter-row" id="cardConditions"></div>
+        <p class="filter-hint" data-i18n="add.filterHint">Nessuna selezione = tutte le offerte</p>
         <label class="check" id="autoCartLabel"><input type="checkbox" id="autoCart" checked> <span data-i18n="add.autoCart">Auto-cart se sotto soglia</span><span class="pro-lock-tag" id="autoCartProTag" hidden>PRO</span></label>
         <button type="button" id="addBtn" data-i18n="add.submit">Aggiungi alla lista</button>
       </div>

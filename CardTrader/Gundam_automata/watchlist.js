@@ -1,7 +1,7 @@
 import { init as initI18n, t, applyDom, getLocaleBcp47, onLocaleChange } from "./i18n.js";
 import { canChartRange, loadResolvedEntitlement, ACTIONS, can } from "./entitlements.js";
 import { openCheckoutPage } from "./licenseApi.js";
-import { normalizeWatchItem } from "./watchItem.js";
+import { filterSummary, normalizeWatchItem } from "./watchItem.js";
 
 let allItems = [];
 let searchTimer = null;
@@ -342,6 +342,7 @@ function render() {
           ${escapeHtml(t("card.maxShort"))} <b>${formatEuro(item.target)}</b>
           ${channelBadge(item)}
           <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
+          ${filterSummary(item) ? `<span class="badge filter">${escapeHtml(filterSummary(item))}</span>` : ""}
           ${under ? `<span class="badge hit">${escapeHtml(t("badge.underThreshold"))}</span>` : ""}
         </div>
         <div class="prices">

@@ -13,7 +13,14 @@ import {
 import { activateLicense, clearLicense, verifyLicense } from "./licenseApi.js";
 import {
     isValidBlueprintId,
+    isSingleCardListing,
+    isZeroListing,
+    listingCents,
+    listingLanguage,
+    listingLanguageKeys,
+    listingCondition,
     listingPriceEuro,
+    matchesListingFilters,
     normalizeWatchItem,
     prepareWatchList
 } from "./watchItem.js";
@@ -33,6 +40,24 @@ let checkPending = false;
 let cycleEntitlement = null;
 
 const i18nReady = initI18n().catch((err) => console.error("i18n init:", err));
+
+// #region agent log
+function agentLog(location, message, data, hypothesisId) {
+    fetch("http://127.0.0.1:7580/ingest/3950b0d9-062e-4308-9fc6-a693cb17ea30", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2d9ff0" },
+        body: JSON.stringify({
+            sessionId: "2d9ff0",
+            runId: "pre-fix",
+            hypothesisId,
+            location,
+            message,
+            data,
+            timestamp: Date.now()
+        })
+    }).catch(() => {});
+}
+// #endregion
 
 chrome.runtime.onInstalled.addListener(async () => {
     await i18nReady;
@@ -315,39 +340,52 @@ function trackMinPrice(prevMin, current) {
     return Math.min(Number(prevMin), cur);
 }
 
-function isZeroListing(listing) {
-    return (
-        (listing.user && listing.user.can_sell_sealed_with_ct_zero === true) ||
-        listing.can_be_sent_with_zero === true ||
-        listing.can_be_sent_with_zero === "true"
-    );
-}
-
 function pickBestListing(listings, excludeIds) {
     if (!listings || listings.length === 0) return null;
     const exclude = excludeIds instanceof Set
         ? excludeIds
         : new Set((excludeIds || []).filter((id) => id != null).map(Number));
     let best = null;
+    let bestCents = Infinity;
     for (const cur of listings) {
         if (exclude.has(Number(cur?.id))) continue;
-        const curCents = cur?.price?.cents ?? Infinity;
-        const bestCents = best?.price?.cents ?? Infinity;
-        if (curCents < bestCents) best = cur;
+        const curCents = listingCents(cur);
+        if (curCents == null || curCents >= bestCents) continue;
+        bestCents = curCents;
+        best = cur;
     }
     return best;
 }
 
-function splitListings(listings, excludeIds) {
+function filterPriceOutliers(listings) {
+    const cents = listings.map(listingCents).filter((c) => c != null && c > 0);
+    if (cents.length < 4) return listings;
+    const sorted = [...cents].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const maxCents = Math.max(Math.round(median * 8), 5000);
+    return listings.filter((l) => {
+        const c = listingCents(l);
+        return c == null || c <= maxCents;
+    });
+}
+
+function splitListings(listings, excludeIds, filters) {
     const zero = [];
     const normal = [];
+    const languages = filters?.languages;
+    const conditions = filters?.conditions;
     for (const l of listings || []) {
+        if (!isSingleCardListing(l)) continue;
+        if (!matchesListingFilters(l, languages, conditions)) continue;
         if (isZeroListing(l)) zero.push(l);
         else normal.push(l);
     }
+    const zeroFiltered = filterPriceOutliers(zero);
     return {
-        bestZero: pickBestListing(zero, excludeIds),
-        bestNormal: pickBestListing(normal, excludeIds)
+        bestZero: pickBestListing(zeroFiltered, excludeIds),
+        bestNormal: pickBestListing(normal, excludeIds),
+        zeroCount: zeroFiltered.length,
+        normalCount: normal.length
     };
 }
 
@@ -360,6 +398,74 @@ function cartExcludeIdsForItem(item, cartArchive) {
         exclude.add(Number(entry.productId));
     }
     return exclude;
+}
+
+function extractMarketplaceListings(body, bId) {
+    if (!body) return [];
+    if (Array.isArray(body)) return body;
+    if (typeof body !== "object") return [];
+    const key = Number(bId);
+    return body[key] || body[String(key)] || [];
+}
+
+const RETRYABLE_HTTP = new Set([429, 502, 503, 504]);
+const MARKETPLACE_MAX_RETRIES = 3;
+
+async function fetchMarketplaceListings(token, bId, meta = {}) {
+    const params = new URLSearchParams({ blueprint_id: String(bId) });
+    if (meta.language) params.set("language", String(meta.language));
+    const url = `${BASE_URL}/marketplace/products?${params.toString()}`;
+    // #region agent log
+    agentLog("background.js:fetchMarketplaceListings", "marketplace request", {
+        bId,
+        languageParam: meta.language || null,
+        urlHasLanguage: url.includes("language=")
+    }, "C");
+    // #endregion
+    let lastResult = null;
+
+    for (let attempt = 0; attempt < MARKETPLACE_MAX_RETRIES; attempt++) {
+        if (attempt > 0) {
+            await delayMs(Math.min(8000, 500 * 2 ** (attempt - 1)));
+        }
+
+        const result = await apiFetch(
+            url,
+            { headers: { Authorization: `Bearer ${token}` } },
+            {
+                kind: "marketplace",
+                label: `Marketplace blueprint ${bId}${attempt ? ` (retry ${attempt})` : ""}`,
+                blueprintId: bId,
+                ...meta
+            }
+        );
+        lastResult = result;
+
+        if (result.ok) return result;
+        if (!RETRYABLE_HTTP.has(result.status) || attempt >= MARKETPLACE_MAX_RETRIES - 1) {
+            return result;
+        }
+    }
+
+    return lastResult;
+}
+
+function delayMs(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Ripristina preferenze utente in storage (Free clamp solo a runtime nel loop). */
+function watchListForStorage(processedList, rawList) {
+    return processedList.map((item, i) => {
+        const raw = rawList[i];
+        if (!raw) return item;
+        return {
+            ...item,
+            watchZero: raw.watchZero,
+            watchNormal: raw.watchNormal,
+            autoCart: raw.autoCart
+        };
+    });
 }
 
 async function getPollMinutes() {
@@ -582,16 +688,15 @@ async function avviaControlloLista() {
             continue;
         }
         try {
-            const url = `${BASE_URL}/marketplace/products?blueprint_id=${item.bId}`;
-            const result = await apiFetch(
-                url,
-                { headers: { Authorization: `Bearer ${data.token}` } },
-                {
-                    kind: "marketplace",
-                    label: `Marketplace blueprint ${item.bId}`,
-                    blueprintId: item.bId
-                }
-            );
+            const apiLanguage =
+                Array.isArray(item.languages) &&
+                item.languages.length === 1 &&
+                /^[a-z]{2}$/.test(item.languages[0])
+                    ? item.languages[0]
+                    : null;
+            const result = await fetchMarketplaceListings(data.token, item.bId, {
+                language: apiLanguage
+            });
 
             if (!result.ok) {
                 errors += 1;
@@ -600,33 +705,80 @@ async function avviaControlloLista() {
             }
 
             checked += 1;
-            const products = result.body || {};
-            const listings = products[item.bId] || products[String(item.bId)] || [];
+            const listings = extractMarketplaceListings(result.body, item.bId);
+            const firstPh = listings[0]?.properties_hash && typeof listings[0].properties_hash === "object"
+                ? Object.keys(listings[0].properties_hash)
+                : [];
+            const uniqueLangs = [...new Set(listings.map(listingLanguage).filter(Boolean))];
+            const uniqueConds = [...new Set(listings.map(listingCondition).filter(Boolean))];
+            // #region agent log
+            agentLog("background.js:avviaControlloLista", "raw marketplace listings", {
+                bId: item.bId,
+                count: listings.length,
+                propertyKeys: firstPh,
+                uniqueLangs,
+                uniqueConds,
+                filters: { languages: item.languages, conditions: item.conditions },
+                sample: listings.slice(0, 4).map((l) => ({
+                    id: l?.id,
+                    cents: listingCents(l),
+                    lang: listingLanguage(l),
+                    cond: listingCondition(l),
+                    languageKeys: listingLanguageKeys(l?.properties_hash),
+                    languageProps: Object.fromEntries(
+                        listingLanguageKeys(l?.properties_hash).map((k) => [
+                            k,
+                            l?.properties_hash?.[k] ?? null
+                        ])
+                    )
+                }))
+            }, "A");
+            // #endregion
+            // Prezzi in UI = miglior offerta sul mercato (senza escludere il carrello)
+            const { bestZero, bestNormal, zeroCount, normalCount } = splitListings(
+                listings,
+                undefined,
+                item
+            );
+            // #region agent log
+            agentLog("background.js:avviaControlloLista", "after language/condition filter", {
+                bId: item.bId,
+                rawCount: listings.length,
+                zeroCount,
+                normalCount,
+                bestZero: bestZero
+                    ? { cents: listingCents(bestZero), lang: listingLanguage(bestZero), cond: listingCondition(bestZero) }
+                    : null,
+                bestNormal: bestNormal
+                    ? { cents: listingCents(bestNormal), lang: listingLanguage(bestNormal), cond: listingCondition(bestNormal) }
+                    : null
+            }, "E");
+            // #endregion
             const excludeIds = cartExcludeIdsForItem(item, cartArchive);
-            const { bestZero, bestNormal } = splitListings(listings, excludeIds);
+            // Auto-cart / alert su nuove offerte = esclude prodotti già in carrello
+            const cartPicks = splitListings(listings, excludeIds, item);
 
-            let next = {
-                ...item,
-                lastSeenZero: null,
-                lastSeenNormal: null,
-                lastSeenZeroAt: null,
-                lastSeenNormalAt: null
-            };
-
+            const next = { ...item };
             const checkedAt = Date.now();
             const zeroPrice = listingPriceEuro(bestZero);
             const normalPrice = listingPriceEuro(bestNormal);
             if (zeroPrice != null) {
                 next.lastSeenZero = zeroPrice;
                 next.lastSeenZeroAt = checkedAt;
+            } else if (item.watchZero) {
+                next.lastSeenZero = null;
+                next.lastSeenZeroAt = null;
             }
             if (normalPrice != null) {
                 next.lastSeenNormal = normalPrice;
                 next.lastSeenNormalAt = checkedAt;
+            } else if (item.watchNormal) {
+                next.lastSeenNormal = null;
+                next.lastSeenNormalAt = null;
             }
 
-            next.minZero = trackMinPrice(item.minZero, next.lastSeenZero);
-            next.minNormal = trackMinPrice(item.minNormal, next.lastSeenNormal);
+            next.minZero = zeroPrice != null ? trackMinPrice(item.minZero, zeroPrice) : item.minZero ?? null;
+            next.minNormal = normalPrice != null ? trackMinPrice(item.minNormal, normalPrice) : item.minNormal ?? null;
 
             const seenCandidates = [];
             if (item.watchZero && next.lastSeenZero != null) seenCandidates.push(next.lastSeenZero);
@@ -635,53 +787,50 @@ async function avviaControlloLista() {
                 if (next.lastSeenZero != null) seenCandidates.push(next.lastSeenZero);
                 if (next.lastSeenNormal != null) seenCandidates.push(next.lastSeenNormal);
             }
-            next.lastSeenPrice = seenCandidates.length ? Math.min(...seenCandidates) : null;
+            if (seenCandidates.length) {
+                next.lastSeenPrice = Math.min(...seenCandidates);
+            }
 
-            historySamples[String(item.bId)] = {
-                t: checkedAt,
-                z: next.lastSeenZero,
-                n: next.lastSeenNormal
-            };
+            if (zeroPrice != null || normalPrice != null) {
+                historySamples[String(item.bId)] = {
+                    t: checkedAt,
+                    z: next.lastSeenZero,
+                    n: next.lastSeenNormal
+                };
+            }
 
-            if (item.watchZero && bestZero) {
+            if (item.watchZero && cartPicks.bestZero) {
                 const r = await valutaCanale({
                     item,
                     next,
-                    listing: bestZero,
+                    listing: cartPicks.bestZero,
                     channel: "zero",
                     token: data.token
                 });
-                next = r.next;
+                Object.assign(next, r.next);
                 if (r.alerted) alerts += 1;
             }
 
-            if (item.watchNormal && bestNormal) {
+            if (item.watchNormal && cartPicks.bestNormal) {
                 const r = await valutaCanale({
                     item,
                     next,
-                    listing: bestNormal,
+                    listing: cartPicks.bestNormal,
                     channel: "normal",
                     token: data.token
                 });
-                next = r.next;
+                Object.assign(next, r.next);
                 if (r.alerted) alerts += 1;
             }
 
-            // Keep user prefs in storage; Free clamps only apply at runtime
-            const raw = rawList[i];
-            list[i] = {
-                ...next,
-                watchZero: raw.watchZero,
-                watchNormal: raw.watchNormal,
-                autoCart: raw.autoCart
-            };
+            list[i] = next;
         } catch (error) {
             errors += 1;
             console.error("Errore nel ciclo alert:", error);
         }
     }
 
-    await saveWatchList(list);
+    await saveWatchList(watchListForStorage(list, rawList));
     await mergePriceHistory(historySamples);
 
     if (errors > 0 && checked === 0) {
@@ -871,4 +1020,5 @@ i18nReady
     .then(() => migrateStorage())
     .then(() => maybeVerifyLicense())
     .then(() => ensureAlarm())
-    .then(() => aggiornaOrarioProssimoCheck());
+    .then(() => aggiornaOrarioProssimoCheck())
+    .then(() => runCheckCycle().catch((err) => console.error("startup poll:", err)));

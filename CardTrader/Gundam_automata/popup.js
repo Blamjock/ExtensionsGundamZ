@@ -15,16 +15,59 @@ import {
 } from "./entitlements.js";
 import { openCheckoutPage } from "./licenseApi.js";
 import {
+    CARD_CONDITIONS,
+    CARD_LANGUAGES,
+    CONDITION_SHORT,
+    filterSummary,
     legacyToWatch,
     maskSecret,
+    normalizeWatchConditions,
     normalizeWatchItem,
-    prepareWatchList
+    normalizeWatchLanguages,
+    prepareWatchList,
+    sameStringList
 } from "./watchItem.js";
 
 let entitlementState = { resolved: { tier: "free", source: "free" } };
 
+function renderCardFilterChips() {
+    const langBox = document.getElementById("cardLanguages");
+    const condBox = document.getElementById("cardConditions");
+    if (langBox) {
+        langBox.innerHTML = CARD_LANGUAGES.map(
+            (code) =>
+                `<label class="filter-chip"><input type="checkbox" name="cardLanguage" value="${code}"> <span>${code.toUpperCase()}</span></label>`
+        ).join("");
+    }
+    if (condBox) {
+        condBox.innerHTML = CARD_CONDITIONS.map((cond) => {
+            const short = CONDITION_SHORT[cond] || cond;
+            return `<label class="filter-chip" title="${cond}"><input type="checkbox" name="cardCondition" value="${cond}"> <span>${short}</span></label>`;
+        }).join("");
+    }
+}
+
+function readCheckedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((el) => el.value);
+}
+
+function setCheckedValues(name, values) {
+    const set = new Set(values || []);
+    document.querySelectorAll(`input[name="${name}"]`).forEach((el) => {
+        el.checked = set.has(el.value);
+    });
+}
+
+function readWatchFilters() {
+    return {
+        languages: normalizeWatchLanguages(readCheckedValues("cardLanguage")),
+        conditions: normalizeWatchConditions(readCheckedValues("cardCondition"))
+    };
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     await initI18n();
+    renderCardFilterChips();
     applyDom();
     const localeSelect = document.getElementById("localeSelect");
     if (localeSelect) localeSelect.value = getLocale();
@@ -397,6 +440,8 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     autoCart = clampAutoCart(autoCart, entitlementState.resolved);
     document.getElementById("autoCart").checked = autoCart;
 
+    const { languages, conditions } = readWatchFilters();
+
     const data = await chrome.storage.local.get(["watchList", "sniperList"]);
     let list = (data.watchList || (data.sniperList || []).map(legacyToWatch)).map(normalizeWatchItem);
 
@@ -407,6 +452,11 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     }
 
     const prev = existing >= 0 ? list[existing] : null;
+    const filtersChanged =
+        prev &&
+        (!sameStringList(prev.languages, languages) ||
+            !sameStringList(prev.conditions, conditions));
+    const resetPrices = Boolean(filtersChanged);
     const entry = {
         bId,
         target: price,
@@ -414,17 +464,19 @@ document.getElementById("addBtn").addEventListener("click", async () => {
         label,
         watchZero,
         watchNormal,
-        lastAlertProductId: prev?.lastAlertProductId ?? null,
-        lastAlertAt: prev?.lastAlertAt ?? null,
-        lastAlertPrice: prev?.lastAlertPrice ?? null,
-        lastAlertChannel: prev?.lastAlertChannel ?? null,
-        lastSeenPrice: prev?.lastSeenPrice ?? null,
-        lastSeenZero: prev?.lastSeenZero ?? null,
-        lastSeenNormal: prev?.lastSeenNormal ?? null,
-        lastSeenZeroAt: prev?.lastSeenZeroAt ?? null,
-        lastSeenNormalAt: prev?.lastSeenNormalAt ?? null,
-        minZero: prev?.minZero ?? prev?.lastSeenZero ?? null,
-        minNormal: prev?.minNormal ?? prev?.lastSeenNormal ?? null,
+        languages,
+        conditions,
+        lastAlertProductId: resetPrices ? null : prev?.lastAlertProductId ?? null,
+        lastAlertAt: resetPrices ? null : prev?.lastAlertAt ?? null,
+        lastAlertPrice: resetPrices ? null : prev?.lastAlertPrice ?? null,
+        lastAlertChannel: resetPrices ? null : prev?.lastAlertChannel ?? null,
+        lastSeenPrice: resetPrices ? null : prev?.lastSeenPrice ?? null,
+        lastSeenZero: resetPrices ? null : prev?.lastSeenZero ?? null,
+        lastSeenNormal: resetPrices ? null : prev?.lastSeenNormal ?? null,
+        lastSeenZeroAt: resetPrices ? null : prev?.lastSeenZeroAt ?? null,
+        lastSeenNormalAt: resetPrices ? null : prev?.lastSeenNormalAt ?? null,
+        minZero: resetPrices ? null : prev?.minZero ?? prev?.lastSeenZero ?? null,
+        minNormal: resetPrices ? null : prev?.minNormal ?? prev?.lastSeenNormal ?? null,
         lastCartProductId: prev?.lastCartProductId ?? null
     };
 
@@ -440,6 +492,8 @@ document.getElementById("addBtn").addEventListener("click", async () => {
         defaultTargetPrice: price,
         defaultWatchZero: watchZero,
         defaultWatchNormal: watchNormal,
+        defaultWatchLanguages: languages,
+        defaultWatchConditions: conditions,
         defaultAutoCart: autoCart
     });
     if (data.sniperList) {
@@ -452,6 +506,8 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     document.getElementById("autoCart").checked = autoCart;
     document.getElementById("watchZero").checked = watchZero;
     document.getElementById("watchNormal").checked = watchNormal;
+    setCheckedValues("cardLanguage", languages);
+    setCheckedValues("cardCondition", conditions);
     setStatusUi(true, t("status.addedKept"));
     loadList();
 });
@@ -1100,6 +1156,11 @@ async function loadAll() {
     const ch = clampChannels(watchZero, watchNormal, entitlementState.resolved);
     document.getElementById("watchZero").checked = ch.watchZero;
     document.getElementById("watchNormal").checked = ch.watchNormal;
+    setCheckedValues("cardLanguage", data.defaultWatchLanguages || []);
+    setCheckedValues(
+        "cardCondition",
+        data.defaultWatchConditions !== undefined ? data.defaultWatchConditions : ["Near Mint"]
+    );
 
     let autoCart = data.defaultAutoCart !== undefined ? Boolean(data.defaultAutoCart) : true;
     autoCart = clampAutoCart(autoCart, entitlementState.resolved);
@@ -1259,6 +1320,7 @@ function loadList() {
                       <div class="card-meta">
                         ${escapeHtml(t("card.max"))} <b>${formatEuro(item.target)}</b>
                         · <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
+                        ${filterSummary(item) ? ` · <span class="badge filter">${escapeHtml(filterSummary(item))}</span>` : ""}
                       </div>
                       <div class="prices">
                         ${priceLine(t("channel.ctZero"), "zero", item.lastSeenZero, item.minZero, item.lastSeenZeroAt, item.watchZero, item.target)}
