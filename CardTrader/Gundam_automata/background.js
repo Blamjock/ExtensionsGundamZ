@@ -20,7 +20,9 @@ import {
     listingLanguageKeys,
     listingCondition,
     listingPriceEuro,
+    listingStock,
     matchesListingFilters,
+    marketplaceFoilParam,
     normalizeWatchItem,
     prepareWatchList
 } from "./watchItem.js";
@@ -374,9 +376,10 @@ function splitListings(listings, excludeIds, filters) {
     const normal = [];
     const languages = filters?.languages;
     const conditions = filters?.conditions;
+    const foilModes = filters?.foilModes;
     for (const l of listings || []) {
         if (!isSingleCardListing(l)) continue;
-        if (!matchesListingFilters(l, languages, conditions)) continue;
+        if (!matchesListingFilters(l, languages, conditions, foilModes)) continue;
         if (isZeroListing(l)) zero.push(l);
         else normal.push(l);
     }
@@ -392,12 +395,57 @@ function splitListings(listings, excludeIds, filters) {
 function cartExcludeIdsForItem(item, cartArchive) {
     const exclude = new Set();
     if (item.lastCartProductId != null) exclude.add(Number(item.lastCartProductId));
+    // Nuova missione (cartedQty 0): non escludere l'archivio, così Riprendi può riprendere dagli stessi listing.
+    if (Number(item.cartedQty || 0) <= 0) return exclude;
     for (const entry of cartArchive || []) {
         if (entry == null || entry.productId == null) continue;
         if (entry.bId == null || Number(entry.bId) !== Number(item.bId)) continue;
         exclude.add(Number(entry.productId));
     }
     return exclude;
+}
+
+function collectChannelListings(listings, filters, channel) {
+    const out = [];
+    const languages = filters?.languages;
+    const conditions = filters?.conditions;
+    const foilModes = filters?.foilModes;
+    for (const l of listings || []) {
+        if (!isSingleCardListing(l)) continue;
+        if (!matchesListingFilters(l, languages, conditions, foilModes)) continue;
+        const isZero = isZeroListing(l);
+        if (channel === "zero" && !isZero) continue;
+        if (channel === "normal" && isZero) continue;
+        out.push(l);
+    }
+    return channel === "zero" ? filterPriceOutliers(out) : out;
+}
+
+/**
+ * Listing sotto soglia sui canali abilitati, ordinati per prezzo crescente (greedy multi-seller).
+ */
+function collectFillCandidates(listings, item, excludeIds) {
+    const exclude = excludeIds instanceof Set
+        ? excludeIds
+        : new Set((excludeIds || []).filter((id) => id != null).map(Number));
+    const target = Number(item.target);
+    const pool = [];
+
+    const pushChannel = (channel) => {
+        for (const l of collectChannelListings(listings, item, channel)) {
+            if (exclude.has(Number(l?.id))) continue;
+            const cents = listingCents(l);
+            const price = listingPriceEuro(l);
+            if (cents == null || price == null || price > target) continue;
+            pool.push({ listing: l, channel, price, cents });
+        }
+    };
+
+    if (item.watchZero) pushChannel("zero");
+    if (item.watchNormal) pushChannel("normal");
+
+    pool.sort((a, b) => a.cents - b.cents);
+    return pool;
 }
 
 function extractMarketplaceListings(body, bId) {
@@ -414,12 +462,17 @@ const MARKETPLACE_MAX_RETRIES = 3;
 async function fetchMarketplaceListings(token, bId, meta = {}) {
     const params = new URLSearchParams({ blueprint_id: String(bId) });
     if (meta.language) params.set("language", String(meta.language));
+    if (meta.foil === true || meta.foil === false) {
+        params.set("foil", meta.foil ? "true" : "false");
+    }
     const url = `${BASE_URL}/marketplace/products?${params.toString()}`;
     // #region agent log
     agentLog("background.js:fetchMarketplaceListings", "marketplace request", {
         bId,
         languageParam: meta.language || null,
-        urlHasLanguage: url.includes("language=")
+        foilParam: meta.foil === true || meta.foil === false ? meta.foil : null,
+        urlHasLanguage: url.includes("language="),
+        urlHasFoil: url.includes("foil=")
     }, "C");
     // #endregion
     let lastResult = null;
@@ -577,40 +630,68 @@ async function removePriceHistory(bId) {
     await chrome.storage.local.set({ priceHistory: all });
 }
 
-async function valutaCanale({ item, next, listing, channel, token }) {
-    const currentPrice = listingPriceEuro(listing);
-    const productId = listing?.id;
-    if (currentPrice == null || productId == null) {
+/**
+ * Alert (dedupe) + auto-cart greedy fino a wantQty; mette in pausa la voce a obiettivo raggiunto.
+ */
+async function processAlertsAndAutoCart({ item, next, listings, excludeIds, token }) {
+    const candidates = collectFillCandidates(listings, item, excludeIds);
+    if (candidates.length === 0) {
         return { next, alerted: false };
     }
+
+    const best = candidates[0];
+    const currentPrice = best.price;
+    const productId = best.listing?.id;
+    const channel = best.channel;
     const channelLabel = channel === "zero" ? t("channel.ctZero") : t("channel.normal");
 
-    if (channel === "zero") next.lastSeenZero = currentPrice;
-    else next.lastSeenNormal = currentPrice;
+    let addedThisCycle = 0;
+    let cartFailed = false;
+    const localExclude = excludeIds instanceof Set ? new Set(excludeIds) : new Set(excludeIds || []);
 
-    const candidates = [];
-    if (item.watchZero && next.lastSeenZero != null) candidates.push(next.lastSeenZero);
-    if (item.watchNormal && next.lastSeenNormal != null) candidates.push(next.lastSeenNormal);
-    if (candidates.length) next.lastSeenPrice = Math.min(...candidates);
+    if (item.autoCart) {
+        let remaining = Math.max(0, Number(next.wantQty || 1) - Number(next.cartedQty || 0));
+        for (const cand of candidates) {
+            if (remaining <= 0) break;
+            const pid = cand.listing?.id;
+            if (pid == null || localExclude.has(Number(pid))) continue;
+            const take = Math.min(listingStock(cand.listing), remaining);
+            if (take < 1) continue;
 
-    if (currentPrice > item.target) {
-        return { next, alerted: false };
+            const aggiunto = await aggiungiAlCarrello(token, pid, cand.channel === "zero", {
+                bId: item.bId,
+                label: item.label || `ID ${item.bId}`,
+                unitPrice: cand.price,
+                channel: cand.channel,
+                quantity: take
+            });
+            if (aggiunto) {
+                next.lastCartProductId = pid;
+                next.cartedQty = Number(next.cartedQty || 0) + take;
+                addedThisCycle += take;
+                remaining -= take;
+                localExclude.add(Number(pid));
+            } else {
+                cartFailed = true;
+            }
+        }
+
+        if (Number(next.cartedQty || 0) >= Number(next.wantQty || 1)) {
+            next.paused = true;
+            next.cartedQty = Number(next.wantQty || 1);
+        }
     }
 
     let cartNote = "";
-    if (item.autoCart && productId !== item.lastCartProductId) {
-        const aggiunto = await aggiungiAlCarrello(token, productId, channel === "zero", {
-            bId: item.bId,
-            label: item.label || `ID ${item.bId}`,
-            unitPrice: currentPrice,
-            channel
+    if (addedThisCycle > 0) {
+        cartNote = t("bg.cartAddedQty", {
+            added: addedThisCycle,
+            carted: next.cartedQty,
+            want: next.wantQty
         });
-        if (aggiunto) {
-            next.lastCartProductId = productId;
-            cartNote = t("bg.cartAdded");
-        } else {
-            cartNote = t("bg.cartFailed");
-        }
+        if (next.paused) cartNote += t("bg.cartPaused");
+    } else if (cartFailed) {
+        cartNote = t("bg.cartFailed");
     }
 
     const sameProduct = productId === item.lastAlertProductId;
@@ -620,7 +701,8 @@ async function valutaCanale({ item, next, listing, channel, token }) {
         sameChannel &&
         item.lastAlertPrice != null &&
         currentPrice < item.lastAlertPrice;
-    const shouldAlert = !(sameProduct && sameChannel) || priceDropped || Boolean(cartNote);
+    const shouldAlert =
+        !(sameProduct && sameChannel) || priceDropped || addedThisCycle > 0 || cartFailed;
 
     if (!shouldAlert) {
         return { next, alerted: false };
@@ -631,7 +713,7 @@ async function valutaCanale({ item, next, listing, channel, token }) {
         name,
         channel: channelLabel,
         price: currentPrice.toFixed(2),
-        target: item.target.toFixed(2)
+        target: Number(item.target).toFixed(2)
     });
 
     inviaNotifica(t("bg.notifyTitle"), msg + cartNote);
@@ -687,6 +769,9 @@ async function avviaControlloLista() {
             errors += 1;
             continue;
         }
+        if (item.paused) {
+            continue;
+        }
         try {
             const apiLanguage =
                 Array.isArray(item.languages) &&
@@ -694,8 +779,10 @@ async function avviaControlloLista() {
                 /^[a-z]{2}$/.test(item.languages[0])
                     ? item.languages[0]
                     : null;
+            const apiFoil = marketplaceFoilParam(item.foilModes);
             const result = await fetchMarketplaceListings(data.token, item.bId, {
-                language: apiLanguage
+                language: apiLanguage,
+                foil: apiFoil
             });
 
             if (!result.ok) {
@@ -718,7 +805,7 @@ async function avviaControlloLista() {
                 propertyKeys: firstPh,
                 uniqueLangs,
                 uniqueConds,
-                filters: { languages: item.languages, conditions: item.conditions },
+                filters: { languages: item.languages, conditions: item.conditions, foilModes: item.foilModes },
                 sample: listings.slice(0, 4).map((l) => ({
                     id: l?.id,
                     cents: listingCents(l),
@@ -755,8 +842,6 @@ async function avviaControlloLista() {
             }, "E");
             // #endregion
             const excludeIds = cartExcludeIdsForItem(item, cartArchive);
-            // Auto-cart / alert su nuove offerte = esclude prodotti già in carrello
-            const cartPicks = splitListings(listings, excludeIds, item);
 
             const next = { ...item };
             const checkedAt = Date.now();
@@ -799,24 +884,16 @@ async function avviaControlloLista() {
                 };
             }
 
-            if (item.watchZero && cartPicks.bestZero) {
-                const r = await valutaCanale({
-                    item,
-                    next,
-                    listing: cartPicks.bestZero,
-                    channel: "zero",
-                    token: data.token
-                });
-                Object.assign(next, r.next);
-                if (r.alerted) alerts += 1;
-            }
+            const underTarget =
+                (item.watchZero && zeroPrice != null && zeroPrice <= item.target) ||
+                (item.watchNormal && normalPrice != null && normalPrice <= item.target);
 
-            if (item.watchNormal && cartPicks.bestNormal) {
-                const r = await valutaCanale({
+            if (underTarget) {
+                const r = await processAlertsAndAutoCart({
                     item,
                     next,
-                    listing: cartPicks.bestNormal,
-                    channel: "normal",
+                    listings,
+                    excludeIds,
                     token: data.token
                 });
                 Object.assign(next, r.next);
@@ -852,10 +929,11 @@ async function aggiungiAlCarrello(token, productId, viaZero, meta = {}) {
     try {
         const stored = await chrome.storage.local.get(["cartAddress"]);
         const addr = normalizeAddress(stored.cartAddress);
+        const quantity = Math.max(1, Math.floor(Number(meta.quantity) || 1));
 
         const body = {
             product_id: productId,
-            quantity: 1,
+            quantity,
             via_cardtrader_zero: Boolean(viaZero)
         };
         if (addr) {
@@ -876,7 +954,7 @@ async function aggiungiAlCarrello(token, productId, viaZero, meta = {}) {
             },
             {
                 kind: "cart",
-                label: `POST /cart/add product ${productId}${viaZero ? " (Zero)" : " (Normale)"}`
+                label: `POST /cart/add product ${productId} x${quantity}${viaZero ? " (Zero)" : " (Normale)"}`
             }
         );
 
@@ -898,7 +976,7 @@ async function aggiungiAlCarrello(token, productId, viaZero, meta = {}) {
             label: meta.label || `Product ${productId}`,
             unitPrice: Number(meta.unitPrice) || 0,
             channel: meta.channel || (viaZero ? "zero" : "normal"),
-            quantity: 1
+            quantity
         });
         return true;
     } catch (e) {

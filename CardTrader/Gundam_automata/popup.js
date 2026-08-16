@@ -18,10 +18,14 @@ import {
     CARD_CONDITIONS,
     CARD_LANGUAGES,
     CONDITION_SHORT,
+    FOIL_MODES,
+    FOIL_MODE_SHORT,
     filterSummary,
     legacyToWatch,
     maskSecret,
+    normalizeWantQty,
     normalizeWatchConditions,
+    normalizeWatchFoilModes,
     normalizeWatchItem,
     normalizeWatchLanguages,
     prepareWatchList,
@@ -33,6 +37,7 @@ let entitlementState = { resolved: { tier: "free", source: "free" } };
 function renderCardFilterChips() {
     const langBox = document.getElementById("cardLanguages");
     const condBox = document.getElementById("cardConditions");
+    const foilBox = document.getElementById("cardFinishes");
     if (langBox) {
         langBox.innerHTML = CARD_LANGUAGES.map(
             (code) =>
@@ -43,6 +48,18 @@ function renderCardFilterChips() {
         condBox.innerHTML = CARD_CONDITIONS.map((cond) => {
             const short = CONDITION_SHORT[cond] || cond;
             return `<label class="filter-chip" title="${cond}"><input type="checkbox" name="cardCondition" value="${cond}"> <span>${short}</span></label>`;
+        }).join("");
+    }
+    if (foilBox) {
+        foilBox.innerHTML = FOIL_MODES.map((mode) => {
+            const labelKey =
+                mode === "foil"
+                    ? "add.finishFoil"
+                    : mode === "nonfoil"
+                      ? "add.finishNonfoil"
+                      : "add.finishReverse";
+            const short = FOIL_MODE_SHORT[mode] || mode;
+            return `<label class="filter-chip" data-i18n-title="${labelKey}" title="${escapeHtml(t(labelKey))}"><input type="checkbox" name="cardFinish" value="${mode}"> <span data-i18n="${labelKey}">${escapeHtml(short)}</span></label>`;
         }).join("");
     }
 }
@@ -61,7 +78,8 @@ function setCheckedValues(name, values) {
 function readWatchFilters() {
     return {
         languages: normalizeWatchLanguages(readCheckedValues("cardLanguage")),
-        conditions: normalizeWatchConditions(readCheckedValues("cardCondition"))
+        conditions: normalizeWatchConditions(readCheckedValues("cardCondition")),
+        foilModes: normalizeWatchFoilModes(readCheckedValues("cardFinish"))
     };
 }
 
@@ -440,7 +458,10 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     autoCart = clampAutoCart(autoCart, entitlementState.resolved);
     document.getElementById("autoCart").checked = autoCart;
 
-    const { languages, conditions } = readWatchFilters();
+    const wantQty = normalizeWantQty(document.getElementById("wantQty").value);
+    document.getElementById("wantQty").value = String(wantQty);
+
+    const { languages, conditions, foilModes } = readWatchFilters();
 
     const data = await chrome.storage.local.get(["watchList", "sniperList"]);
     let list = (data.watchList || (data.sniperList || []).map(legacyToWatch)).map(normalizeWatchItem);
@@ -455,17 +476,23 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     const filtersChanged =
         prev &&
         (!sameStringList(prev.languages, languages) ||
-            !sameStringList(prev.conditions, conditions));
+            !sameStringList(prev.conditions, conditions) ||
+            !sameStringList(prev.foilModes, foilModes));
     const resetPrices = Boolean(filtersChanged);
+    const prevCarted = prev ? Number(prev.cartedQty || 0) : 0;
     const entry = {
         bId,
         target: price,
         autoCart,
+        wantQty,
+        cartedQty: Math.min(prevCarted, wantQty),
+        paused: Boolean(prev?.paused) && prevCarted >= wantQty,
         label,
         watchZero,
         watchNormal,
         languages,
         conditions,
+        foilModes,
         lastAlertProductId: resetPrices ? null : prev?.lastAlertProductId ?? null,
         lastAlertAt: resetPrices ? null : prev?.lastAlertAt ?? null,
         lastAlertPrice: resetPrices ? null : prev?.lastAlertPrice ?? null,
@@ -494,7 +521,9 @@ document.getElementById("addBtn").addEventListener("click", async () => {
         defaultWatchNormal: watchNormal,
         defaultWatchLanguages: languages,
         defaultWatchConditions: conditions,
-        defaultAutoCart: autoCart
+        defaultWatchFoilModes: foilModes,
+        defaultAutoCart: autoCart,
+        defaultWantQty: wantQty
     });
     if (data.sniperList) {
         await chrome.storage.local.remove("sniperList");
@@ -504,10 +533,12 @@ document.getElementById("addBtn").addEventListener("click", async () => {
     document.getElementById("cardLabel").value = "";
     document.getElementById("targetPrice").value = String(price);
     document.getElementById("autoCart").checked = autoCart;
+    document.getElementById("wantQty").value = String(wantQty);
     document.getElementById("watchZero").checked = watchZero;
     document.getElementById("watchNormal").checked = watchNormal;
     setCheckedValues("cardLanguage", languages);
     setCheckedValues("cardCondition", conditions);
+    setCheckedValues("cardFinish", foilModes);
     setStatusUi(true, t("status.addedKept"));
     loadList();
 });
@@ -594,6 +625,20 @@ document.addEventListener("click", async (e) => {
         const bId = parseInt(chartBtn.dataset.bid, 10);
         const label = chartBtn.dataset.label || `ID ${bId}`;
         openPriceChart(bId, label);
+        return;
+    }
+
+    const resumeBtn = e.target.closest(".resume-btn");
+    if (resumeBtn) {
+        const bId = parseInt(resumeBtn.dataset.bid, 10);
+        if (!Number.isFinite(bId)) return;
+        const data = await chrome.storage.local.get(["watchList"]);
+        const list = (data.watchList || []).map(normalizeWatchItem);
+        const idx = list.findIndex((x) => Number(x.bId) === bId);
+        if (idx < 0) return;
+        list[idx] = { ...list[idx], paused: false, cartedQty: 0, lastCartProductId: null };
+        await chrome.storage.local.set({ watchList: list });
+        loadList();
         return;
     }
 
@@ -1109,7 +1154,11 @@ async function loadAll() {
         "defaultTargetPrice",
         "defaultWatchZero",
         "defaultWatchNormal",
+        "defaultWatchLanguages",
+        "defaultWatchConditions",
+        "defaultWatchFoilModes",
         "defaultAutoCart",
+        "defaultWantQty",
         "activeTab",
         "addCardPanelOpen",
         "tokenPanelOpen",
@@ -1161,10 +1210,14 @@ async function loadAll() {
         "cardCondition",
         data.defaultWatchConditions !== undefined ? data.defaultWatchConditions : ["Near Mint"]
     );
+    setCheckedValues("cardFinish", data.defaultWatchFoilModes || []);
 
     let autoCart = data.defaultAutoCart !== undefined ? Boolean(data.defaultAutoCart) : true;
     autoCart = clampAutoCart(autoCart, entitlementState.resolved);
     document.getElementById("autoCart").checked = autoCart;
+    document.getElementById("wantQty").value = String(
+        normalizeWantQty(data.defaultWantQty != null ? data.defaultWantQty : 1)
+    );
 
     if (data.licenseKey) {
         document.getElementById("licenseKeyInput").placeholder = maskSecret(data.licenseKey);
@@ -1294,10 +1347,19 @@ function loadList() {
         list.forEach((item, index) => {
             const div = document.createElement("div");
             const under = isUnderTarget(item);
-            div.className = `card-item ${channelClass(item)}${under ? " under" : ""}`;
+            div.className = `card-item ${channelClass(item)}${under ? " under" : ""}${item.paused ? " paused" : ""}`;
             const title = cardNameLink(item.bId, item.label, true);
             const autoClass = item.autoCart ? "on" : "off";
             const autoText = item.autoCart ? t("badge.autoCartYes") : t("badge.autoCartNo");
+            const qtyBadge = item.autoCart
+                ? `<span class="badge qty">${escapeHtml(t("badge.qtyProgress", { carted: item.cartedQty, want: item.wantQty }))}</span>`
+                : "";
+            const pausedBadge = item.paused
+                ? `<span class="badge paused">${escapeHtml(t("badge.paused"))}</span>`
+                : "";
+            const resumeBtn = item.paused
+                ? `<button type="button" class="resume-btn" data-bid="${item.bId}" title="${escapeHtml(t("card.resumeTitle"))}">${escapeHtml(t("card.resume"))}</button>`
+                : "";
             const lastAlert =
                 item.lastAlertChannel && item.lastAlertPrice != null
                     ? t("card.lastAlert", {
@@ -1320,6 +1382,8 @@ function loadList() {
                       <div class="card-meta">
                         ${escapeHtml(t("card.max"))} <b>${formatEuro(item.target)}</b>
                         · <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
+                        ${qtyBadge ? ` · ${qtyBadge}` : ""}
+                        ${pausedBadge ? ` · ${pausedBadge}` : ""}
                         ${filterSummary(item) ? ` · <span class="badge filter">${escapeHtml(filterSummary(item))}</span>` : ""}
                       </div>
                       <div class="prices">
@@ -1330,6 +1394,7 @@ function loadList() {
                     </div>
                   </div>
                   <div class="card-actions">
+                    ${resumeBtn}
                     <span class="remove" data-list="watch" data-index="${index}" title="${escapeHtml(t("card.remove"))}">✖</span>
                   </div>
                 </div>

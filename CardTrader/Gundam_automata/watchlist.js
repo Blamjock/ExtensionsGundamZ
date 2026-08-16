@@ -106,6 +106,21 @@ grid.addEventListener("click", async (e) => {
         return;
     }
 
+    const resumeBtn = e.target.closest(".resume-btn");
+    if (resumeBtn) {
+        const bId = parseInt(resumeBtn.dataset.bid, 10);
+        if (!Number.isFinite(bId)) return;
+        const data = await chrome.storage.local.get(["watchList"]);
+        const list = (data.watchList || []).map(normalizeWatchItem);
+        const idx = list.findIndex((x) => Number(x.bId) === bId);
+        if (idx < 0) return;
+        list[idx] = { ...list[idx], paused: false, cartedQty: 0, lastCartProductId: null };
+        await chrome.storage.local.set({ watchList: list });
+        allItems = list;
+        render();
+        return;
+    }
+
     const removeBtn = e.target.closest(".remove-btn");
     if (!removeBtn) return;
     const bId = parseInt(removeBtn.dataset.bid, 10);
@@ -323,15 +338,25 @@ function render() {
         const title = `<a href="${cardTraderUrl(item.bId)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(t("card.openOnCt"))}">${name}</a>${idBit}`;
         const autoClass = item.autoCart ? "on" : "off";
         const autoText = item.autoCart ? t("badge.auto") : t("badge.noAuto");
+        const qtyBadge = item.autoCart
+            ? `<span class="badge qty">${escapeHtml(t("badge.qtyProgress", { carted: item.cartedQty, want: item.wantQty }))}</span>`
+            : "";
+        const pausedBadge = item.paused
+            ? `<span class="badge paused">${escapeHtml(t("badge.paused"))}</span>`
+            : "";
+        const resumeBtn = item.paused
+            ? `<button type="button" class="resume-btn" data-bid="${item.bId}" title="${escapeHtml(t("card.resumeTitle"))}">${escapeHtml(t("card.resume"))}</button>`
+            : "";
 
         const safeLabel = escapeHtml(item.label || `ID ${item.bId}`);
         const card = document.createElement("article");
-        card.className = `card ${channelClass(item)}${under ? " under" : ""}`;
+        card.className = `card ${channelClass(item)}${under ? " under" : ""}${item.paused ? " paused" : ""}`;
         card.dataset.bid = String(item.bId);
         card.innerHTML = `
         <div class="card-top">
           <div class="card-title">${title}</div>
           <div class="card-actions">
+            ${resumeBtn}
             <button type="button" class="chart-btn" data-bid="${item.bId}" data-label="${safeLabel}" title="${escapeHtml(t("card.priceChart"))}">
               ${CHART_ICON}
             </button>
@@ -342,6 +367,8 @@ function render() {
           ${escapeHtml(t("card.maxShort"))} <b>${formatEuro(item.target)}</b>
           ${channelBadge(item)}
           <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
+          ${qtyBadge}
+          ${pausedBadge}
           ${filterSummary(item) ? `<span class="badge filter">${escapeHtml(filterSummary(item))}</span>` : ""}
           ${under ? `<span class="badge hit">${escapeHtml(t("badge.underThreshold"))}</span>` : ""}
         </div>

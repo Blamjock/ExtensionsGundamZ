@@ -114,6 +114,19 @@ export function normalizeWatchConditions(input) {
     return uniqueAllowed(input, CARD_CONDITIONS);
 }
 
+/** Finish ammesse: foil | nonfoil | reverse. Array vuoto = tutte. */
+export const FOIL_MODES = ["foil", "nonfoil", "reverse"];
+
+export const FOIL_MODE_SHORT = {
+    foil: "Foil",
+    nonfoil: "NF",
+    reverse: "Rev"
+};
+
+export function normalizeWatchFoilModes(input) {
+    return uniqueAllowed(input, FOIL_MODES);
+}
+
 export function sameStringList(a, b) {
     const aa = [...(a || [])].map(String).sort();
     const bb = [...(b || [])].map(String).sort();
@@ -150,12 +163,53 @@ export function listingCondition(listing) {
     return String(ph.condition || "").trim();
 }
 
+function propIsTrue(value) {
+    return value === true || value === "true" || value === 1 || value === "1";
+}
+
+/** Foil generico: `foil` o qualsiasi `*_foil` true (mtg_foil, fab_foil, …). */
+export function listingIsFoil(listing) {
+    const ph = listing?.properties_hash;
+    if (!ph || typeof ph !== "object") return false;
+    if (propIsTrue(ph.foil)) return true;
+    for (const [key, value] of Object.entries(ph)) {
+        if (key.endsWith("_foil") && propIsTrue(value)) return true;
+    }
+    return false;
+}
+
+/** Reverse (es. Pokémon reverse holo): `pokemon_reverse` o `reverse`. */
+export function listingIsReverse(listing) {
+    const ph = listing?.properties_hash;
+    if (!ph || typeof ph !== "object") return false;
+    return propIsTrue(ph.pokemon_reverse) || propIsTrue(ph.reverse);
+}
+
+/** Finish normalizzata: reverse | foil | nonfoil. */
+export function listingFinish(listing) {
+    if (listingIsReverse(listing)) return "reverse";
+    if (listingIsFoil(listing)) return "foil";
+    return "nonfoil";
+}
+
+/**
+ * Param marketplace `foil` se il filtro è univoco (solo foil o solo nonfoil).
+ * reverse / mix / vuoto → null (solo filtro client).
+ */
+export function marketplaceFoilParam(foilModes) {
+    const modes = normalizeWatchFoilModes(foilModes);
+    if (modes.length === 1 && modes[0] === "foil") return true;
+    if (modes.length === 1 && modes[0] === "nonfoil") return false;
+    return null;
+}
+
 /**
  * Array vuoto = nessun filtro (tutte le offerte).
  */
-export function matchesListingFilters(listing, languages, conditions) {
+export function matchesListingFilters(listing, languages, conditions, foilModes) {
     const langs = Array.isArray(languages) ? languages : [];
     const conds = Array.isArray(conditions) ? conditions : [];
+    const foils = Array.isArray(foilModes) ? foilModes : [];
     if (langs.length) {
         const lang = listingLanguage(listing);
         if (!langs.includes(lang)) return false;
@@ -164,18 +218,49 @@ export function matchesListingFilters(listing, languages, conditions) {
         const cond = listingCondition(listing);
         if (!conds.includes(cond)) return false;
     }
+    if (foils.length) {
+        const finish = listingFinish(listing);
+        if (!foils.includes(finish)) return false;
+    }
     return true;
 }
 
 export function filterSummary(item) {
     const langs = Array.isArray(item?.languages) ? item.languages : [];
     const conds = Array.isArray(item?.conditions) ? item.conditions : [];
+    const foils = Array.isArray(item?.foilModes) ? item.foilModes : [];
     const parts = [];
     if (langs.length) parts.push(langs.map((l) => l.toUpperCase()).join("/"));
     if (conds.length) {
         parts.push(conds.map((c) => CONDITION_SHORT[c] || c).join("/"));
     }
+    if (foils.length) {
+        parts.push(foils.map((f) => FOIL_MODE_SHORT[f] || f).join("/"));
+    }
     return parts.join(" · ");
+}
+
+const WANT_QTY_MIN = 1;
+const WANT_QTY_MAX = 99;
+
+/** Pezzi da prelevare (1–99). */
+export function normalizeWantQty(value) {
+    const n = Math.floor(Number(value));
+    if (!Number.isFinite(n)) return WANT_QTY_MIN;
+    return Math.min(WANT_QTY_MAX, Math.max(WANT_QTY_MIN, n));
+}
+
+export function normalizeCartedQty(value) {
+    const n = Math.floor(Number(value));
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.min(WANT_QTY_MAX, n);
+}
+
+/** Stock disponibile sul listing marketplace CT. */
+export function listingStock(listing) {
+    const q = Number(listing?.quantity);
+    if (!Number.isFinite(q) || q < 1) return 1;
+    return Math.floor(q);
 }
 
 export function normalizeWatchItem(item) {
@@ -183,15 +268,21 @@ export function normalizeWatchItem(item) {
     const watchNormal = item.watchNormal !== false;
     const lastSeenZero = item.lastSeenZero ?? null;
     const lastSeenNormal = item.lastSeenNormal ?? null;
+    const wantQty = normalizeWantQty(item.wantQty ?? 1);
+    const cartedQty = Math.min(normalizeCartedQty(item.cartedQty), wantQty);
     return {
         bId: Number(item.bId),
         target: Number(item.target),
         autoCart: Boolean(item.autoCart),
+        wantQty,
+        cartedQty,
+        paused: Boolean(item.paused),
         label: typeof item.label === "string" ? item.label : "",
         watchZero,
         watchNormal: watchZero || watchNormal ? watchNormal : true,
         languages: normalizeWatchLanguages(item.languages),
         conditions: normalizeWatchConditions(item.conditions),
+        foilModes: normalizeWatchFoilModes(item.foilModes),
         lastAlertProductId: item.lastAlertProductId ?? null,
         lastAlertAt: item.lastAlertAt ?? null,
         lastAlertPrice: item.lastAlertPrice ?? null,

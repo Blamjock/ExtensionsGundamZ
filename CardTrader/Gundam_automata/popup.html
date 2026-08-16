@@ -376,6 +376,32 @@
     .badge.zero { background: #d5f5e3; color: #1e8449; }
     .badge.normal { background: #d6eaf8; color: #1a5276; }
     .badge.both { background: #f5eef8; color: #6c3483; }
+    .badge.paused { background: #fdebd0; color: #9a7b0a; }
+    .badge.qty { background: #eaf2f8; color: #1a5276; }
+    .want-qty-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 6px 0 2px;
+      font-size: 0.92em;
+      color: #444;
+    }
+    .want-qty-row input {
+      width: 64px;
+      margin: 0;
+      padding: 4px 6px;
+    }
+    .resume-btn {
+      font-size: 0.75em;
+      padding: 2px 6px;
+      border: 1px solid #b9770e;
+      background: #fef9e7;
+      color: #7d6608;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .resume-btn:hover { background: #fcf3cf; }
     .card-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
     .chart-btn {
       width: 22px;
@@ -784,8 +810,15 @@
         <div class="filter-row" id="cardLanguages"></div>
         <div class="section-label" style="margin: 2px 0 0;" data-i18n="add.cardCondition">Stato della carta</div>
         <div class="filter-row" id="cardConditions"></div>
+        <div class="section-label" style="margin: 2px 0 0;" data-i18n="add.cardFinish">Finish / foil</div>
+        <div class="filter-row" id="cardFinishes"></div>
         <p class="filter-hint" data-i18n="add.filterHint">Nessuna selezione = tutte le offerte</p>
+        <p class="filter-hint" data-i18n="add.foilHint">Su Pokémon e alcuni TCG, reverse/holo speciali possono essere blueprint diversi: monitora la pagina CT della variante.</p>
         <label class="check" id="autoCartLabel"><input type="checkbox" id="autoCart" checked> <span data-i18n="add.autoCart">Auto-cart se sotto soglia</span><span class="pro-lock-tag" id="autoCartProTag" hidden>PRO</span></label>
+        <label class="want-qty-row" id="wantQtyLabel" for="wantQty">
+          <span data-i18n="add.wantQty">Quantità da prendere</span>
+          <input type="number" id="wantQty" min="1" max="99" step="1" value="1" data-i18n-title="add.wantQtyTitle" title="Quante copie aggiungere al carrello (poi pausa)">
+        </label>
         <button type="button" id="addBtn" data-i18n="add.submit">Aggiungi alla lista</button>
       </div>
     </details>
