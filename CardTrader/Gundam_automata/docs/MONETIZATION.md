@@ -10,7 +10,7 @@ Un’unica estensione Chrome freemium. Chrome Web Store non offre più pagamenti
 | Canali | Zero **oppure** Normale (uno solo) | entrambi | Dual-channel = valore sniper |
 | Polling | fisso **20 min** | 3–5 min | Meno carico API in Free; Pro più reattivo |
 | Alert | notifica browser | notifica + **suono** | Power feature percepibile |
-| Auto-cart | bloccato | abilitato | Massimo rischio/valore |
+| Auto-cart | bloccato | abilitato (qty + pausa per carta) | Massimo rischio/valore |
 | Grafici | solo **Giorno** | Giorno / Settimana / Mese + tooltip | Storico lungo = Pro |
 | Watchlist page (Espandi) | bloccata | sì | Vista full-page con ricerca/filtri |
 | Debug API | nascosto | sì | Tool power user |

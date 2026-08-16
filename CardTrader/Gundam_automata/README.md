@@ -14,10 +14,11 @@ Estensione Chrome (Manifest V3) per **monitorare i prezzi** sul marketplace [Car
 ## Cosa fa
 
 1. Controlla periodicamente i blueprint in watchlist via API CardTrader.
-2. Separa le offerte **CT Zero** e **Normale**.
-3. Se il prezzo è ≤ soglia → notifica (+ suono campanella in **Pro**).
-4. Opzionale (**Pro**): aggiunge al carrello (`auto-cart`).
-5. Salva lo storico prezzi e lo mostra in **grafici** (Free: giorno; Pro: settimana/mese) con tooltip al passaggio del mouse.
+2. Filtra le offerte per **lingua**, **condizione** e **finish** (non-foil / foil / reverse).
+3. Separa le offerte **CT Zero** e **Normale**.
+4. Se il prezzo è ≤ soglia → notifica (+ suono campanella in **Pro**).
+5. Opzionale (**Pro**): **auto-cart** greedy fino a N pezzi, poi **pausa** della sola carta.
+6. Salva lo storico prezzi e lo mostra in **grafici** (Free: giorno; Pro: settimana/mese) con tooltip al passaggio del mouse.
 
 ## Free / Pro
 
@@ -64,7 +65,7 @@ Esclude `web/`, `docs/`, source icon e junk. Poi carica lo zip nella [Developer 
 2. Seleziona questa cartella (`Gundam_automata`)
 3. Crea e incolla l’API Token CardTrader → **Salva** (vedi [docs/API_TOKEN.md](docs/API_TOKEN.md))
 4. (Opzionale) Scegli la lingua in Impostazioni
-5. Aggiungi Blueprint ID + prezzo max + canali da monitorare
+5. Aggiungi Blueprint ID + prezzo max + canali, filtri (lingua / stato / finish) e, in Pro, quantità da prendere in auto-cart
 
 ## File principali
 
@@ -72,6 +73,7 @@ Esclude `web/`, `docs/`, source icon e junk. Poi carica lo zip nella [Developer 
 Gundam_automata/
 ├── manifest.json          # nome, versione 0.8, permessi
 ├── background.js          # alarm, check API, alert, history, cart, entitlements
+├── watchItem.js           # normalizzazione voce, filtri listing, foil/qty helpers
 ├── entitlements.js        # Free/Pro limits, trial, grace
 ├── licenseApi.js          # activate/verify + stub PRO-DEV-*
 ├── popup.html / popup.js  # UI principale + grafici + upsell

@@ -35,15 +35,16 @@ Crometium TCG tiene d’occhio i listing su CardTrader e ti avvisa quando una ca
 
 COSA FA
 • Aggiungi blueprint alla watchlist (ID o dalla pagina carta CardTrader)
+• Filtra per lingua, condizione e finish (non-foil / foil / reverse)
 • Controlla periodicamente CT Zero e Normale
 • Notifica del browser quando il prezzo è ≤ soglia
 • Grafici dello storico prezzi
-• Opzionale (Pro): suono di alert e auto-cart sul carrello CardTrader
+• Opzionale (Pro): suono di alert e auto-cart (quantità impostabile; pausa della carta a obiettivo raggiunto)
 
 PIANI FREE E PRO
 • Trial Pro: 30 giorni dall’installazione
 • Free: fino a 5 carte, un canale alla volta (Zero oppure Normale), polling fisso 20 minuti, grafico Giorno
-• Pro: fino a 100 carte, Zero + Normale insieme, polling 3–5 minuti, suono, auto-cart, grafici Settimana/Mese, watchlist a schermo intero
+• Pro: fino a 100 carte, Zero + Normale insieme, polling 3–5 minuti, suono, auto-cart a quantità, grafici Settimana/Mese, watchlist a schermo intero
 
 Come passare a Pro: acquisto esterno (PayPal) sulla pagina prezzi → ricevi una license key via email → attivala in Impostazioni. Chrome Web Store non gestisce il pagamento in-app.
 
@@ -84,15 +85,16 @@ Crometium TCG watches CardTrader listings and alerts you when a card drops to or
 
 WHAT IT DOES
 • Add blueprints to a watchlist (by ID or from a CardTrader card page)
+• Filter by language, condition, and finish (non-foil / foil / reverse)
 • Periodically check CT Zero and Normal offers
 • Browser notification when price ≤ target
 • Price history charts
-• Optional (Pro): alert sound and auto-cart into your CardTrader cart
+• Optional (Pro): alert sound and auto-cart (set quantity; pause that card when filled)
 
 FREE AND PRO
 • Pro trial: 30 days from install
 • Free: up to 5 cards, one channel at a time (Zero or Normal), fixed 20-minute polling, Day chart only
-• Pro: up to 100 cards, Zero + Normal together, 3–5 minute polling, sound, auto-cart, Week/Month charts, full-page watchlist
+• Pro: up to 100 cards, Zero + Normal together, 3–5 minute polling, sound, quantity auto-cart, Week/Month charts, full-page watchlist
 
 Upgrade path: pay externally (PayPal) on the pricing page → receive a license key by email → activate it in Settings. Chrome Web Store does not handle in-extension payments.
 
