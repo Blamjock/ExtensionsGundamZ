@@ -89,7 +89,7 @@ document.addEventListener("keydown", (e) => {
         }
         return;
     }
-    if (e.key === "/" && document.activeElement !== searchEl) {
+    if (e.key === "/" && document.activeElement !== searchEl && !document.activeElement?.classList?.contains("target-edit")) {
         e.preventDefault();
         searchEl.focus();
         searchEl.select();
@@ -97,6 +97,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 grid.addEventListener("click", async (e) => {
+    if (e.target.closest(".target-edit")) return;
     const chartBtn = e.target.closest(".chart-btn");
     if (chartBtn) {
         const bId = parseInt(chartBtn.dataset.bid, 10);
@@ -132,6 +133,32 @@ grid.addEventListener("click", async (e) => {
     chrome.runtime.sendMessage({ type: "removePriceHistory", bId });
 });
 
+grid.addEventListener("change", async (e) => {
+    const input = e.target.closest(".target-edit");
+    if (!input) return;
+    const bId = parseInt(input.dataset.bid, 10);
+    const ok = await saveWatchTarget(bId, input.value);
+    input.classList.toggle("invalid", !ok);
+    if (ok) {
+        const n = Math.round(parseFloat(input.value) * 100) / 100;
+        if (Number.isFinite(n)) input.value = n.toFixed(2);
+        const item = allItems.find((x) => Number(x.bId) === bId);
+        if (item) item.target = n;
+    }
+});
+
+grid.addEventListener(
+    "blur",
+    (e) => {
+        if (!e.target.classList?.contains("target-edit")) return;
+        setTimeout(() => {
+            if (document.activeElement?.classList?.contains("target-edit")) return;
+            loadList();
+        }, 0);
+    },
+    true
+);
+
 document.getElementById("chartClose").addEventListener("click", closePriceChart);
 document.getElementById("chartOverlay").addEventListener("click", (e) => {
     if (e.target.id === "chartOverlay") closePriceChart();
@@ -157,7 +184,9 @@ document.querySelectorAll("#chartRanges .range-btn").forEach((btn) => {
 
 chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "local") return;
-    if (changes.watchList) loadList();
+    if (changes.watchList && !document.activeElement?.classList?.contains("target-edit")) {
+        loadList();
+    }
     if (changes.priceHistory && chartState.bId) renderPriceChart();
     if (changes.entitlement || changes.devForcePro || changes.installAt) {
         const info = await loadResolvedEntitlement();
@@ -236,6 +265,21 @@ function getFiltered() {
 function formatEuro(v) {
     if (v == null || !Number.isFinite(Number(v))) return "—";
     return `€${Number(v).toFixed(2)}`;
+}
+
+async function saveWatchTarget(bId, raw) {
+    const price = parseFloat(raw);
+    if (!Number.isFinite(bId) || !Number.isFinite(price) || price <= 0) return false;
+    const target = Math.round(price * 100) / 100;
+    if (target < 0.01) return false;
+    const data = await chrome.storage.local.get(["watchList"]);
+    const list = (data.watchList || []).map(normalizeWatchItem);
+    const idx = list.findIndex((x) => Number(x.bId) === Number(bId));
+    if (idx < 0) return false;
+    if (Number(list[idx].target) === target) return true;
+    list[idx] = { ...list[idx], target };
+    await chrome.storage.local.set({ watchList: list });
+    return true;
 }
 
 function formatCheckTime(ts) {
@@ -364,7 +408,8 @@ function render() {
           </div>
         </div>
         <div class="row-meta">
-          ${escapeHtml(t("card.maxShort"))} <b>${formatEuro(item.target)}</b>
+          ${escapeHtml(t("card.maxShort"))}
+          <input type="number" class="target-edit" step="0.01" min="0.01" data-bid="${item.bId}" value="${Number(item.target).toFixed(2)}" title="${escapeHtml(t("card.maxTitle"))}" aria-label="${escapeHtml(t("card.maxTitle"))}">
           ${channelBadge(item)}
           <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
           ${qtyBadge}

@@ -31,6 +31,7 @@ import {
     prepareWatchList,
     sameStringList
 } from "./watchItem.js";
+import { normalizeImportPercent } from "./deckImport.js";
 
 let entitlementState = { resolved: { tier: "free", source: "free" } };
 
@@ -337,6 +338,7 @@ function setActiveTab(tabId) {
     document.querySelectorAll(".tab-panel").forEach((panel) => {
         panel.classList.toggle("active", panel.id === `panel-${tab}`);
     });
+    syncImportDeckLayout();
     return tab;
 }
 
@@ -363,12 +365,25 @@ function updateTokenBanner(token) {
 
 bindCollapsiblePanels();
 
+function syncImportDeckLayout() {
+    const importOpen = Boolean(document.getElementById("importDeckDetails")?.open);
+    const onCarte = Boolean(document.getElementById("panel-carte")?.classList.contains("active"));
+    const grow = importOpen && onCarte;
+    document.documentElement.classList.toggle("import-deck-open", grow);
+    document.body.classList.toggle("import-deck-open", grow);
+}
+
 function bindCollapsiblePanels() {
     document.querySelectorAll("details.collapsible[data-panel]").forEach((el) => {
         el.addEventListener("toggle", async () => {
             const key = el.dataset.panel;
-            if (!key) return;
-            await chrome.storage.local.set({ [key]: el.open });
+            if (key) await chrome.storage.local.set({ [key]: el.open });
+            if (el.id === "importDeckDetails" && el.open) {
+                document.getElementById("addCardDetails").open = false;
+                await chrome.storage.local.set({ addCardPanelOpen: false });
+                document.getElementById("deckImportText")?.focus();
+            }
+            syncImportDeckLayout();
         });
     });
 }
@@ -408,6 +423,105 @@ document.getElementById("fillFromPageBtn").addEventListener("click", async () =>
     } finally {
         btn.disabled = false;
     }
+});
+
+function setImportDeckStatus(ok, message) {
+    const el = document.getElementById("importDeckStatus");
+    if (!el) return;
+    el.textContent = message || "";
+    el.className = ok === true ? "ok" : ok === false ? "err" : "";
+}
+
+function applyImportProgress(progress) {
+    const btn = document.getElementById("importDeckBtn");
+    if (!progress?.running) {
+        if (btn) btn.disabled = false;
+        return;
+    }
+    if (btn) btn.disabled = true;
+    setImportDeckStatus(
+        null,
+        t("import.progress", {
+            current: progress.current || 0,
+            total: progress.total || 0,
+            code: progress.code || ""
+        })
+    );
+}
+
+document.getElementById("importDeckBtn").addEventListener("click", async () => {
+    await refreshEntitlementUi();
+    const token = document.getElementById("apiToken").value.trim();
+    if (!token) {
+        alert(t("alert.saveTokenFirst"));
+        await switchTab("impostazioni");
+        document.getElementById("tokenDetails").open = true;
+        await chrome.storage.local.set({ tokenPanelOpen: true });
+        document.getElementById("apiToken").focus();
+        return;
+    }
+
+    const text = document.getElementById("deckImportText").value;
+    const percent = normalizeImportPercent(document.getElementById("importDiscountPercent").value);
+    document.getElementById("importDiscountPercent").value = String(percent);
+
+    let autoCart = document.getElementById("autoCart").checked;
+    let watchZero = document.getElementById("watchZero").checked;
+    let watchNormal = document.getElementById("watchNormal").checked;
+    if (!watchZero && !watchNormal) {
+        alert(t("alert.selectChannel"));
+        return;
+    }
+    const channels = clampChannels(watchZero, watchNormal, entitlementState.resolved);
+    watchZero = channels.watchZero;
+    watchNormal = channels.watchNormal;
+    autoCart = clampAutoCart(autoCart, entitlementState.resolved);
+    const { languages, conditions, foilModes } = readWatchFilters();
+
+    const btn = document.getElementById("importDeckBtn");
+    btn.disabled = true;
+    setImportDeckStatus(null, t("import.progress", { current: 0, total: 0, code: "" }));
+    await chrome.storage.local.set({ defaultImportDiscountPercent: percent });
+
+    try {
+        const res = await chrome.runtime.sendMessage({
+            type: "importDeckList",
+            text,
+            percent,
+            watchZero,
+            watchNormal,
+            autoCart,
+            languages,
+            conditions,
+            foilModes
+        });
+        if (!res) {
+            setImportDeckStatus(false, t("import.reportErrors", { count: 1 }));
+            return;
+        }
+        if (res.error === "no_token") {
+            setImportDeckStatus(false, t("import.needToken"));
+            await switchTab("impostazioni");
+            return;
+        }
+        setImportDeckStatus(res.ok, res.message || "");
+        setStatusUi(res.ok, res.message || "");
+        if (res.hitCap) {
+            showUpgradeModal(t("pro.limitCards", { max: maxCardsFor(entitlementState.resolved) }));
+        }
+        loadList();
+    } catch (err) {
+        setImportDeckStatus(false, err?.message || t("import.reportErrors", { count: 1 }));
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+document.getElementById("importDiscountPercent")?.addEventListener("change", async () => {
+    const el = document.getElementById("importDiscountPercent");
+    const percent = normalizeImportPercent(el.value);
+    el.value = String(percent);
+    await chrome.storage.local.set({ defaultImportDiscountPercent: percent });
 });
 
 document.getElementById("addBtn").addEventListener("click", async () => {
@@ -620,6 +734,7 @@ function scrapeCardPage() {
 }
 
 document.addEventListener("click", async (e) => {
+    if (e.target.closest(".target-edit")) return;
     const chartBtn = e.target.closest(".chart-btn");
     if (chartBtn) {
         const bId = parseInt(chartBtn.dataset.bid, 10);
@@ -684,6 +799,30 @@ document.addEventListener("click", async (e) => {
     }
     loadList();
 });
+
+document.getElementById("list")?.addEventListener("change", async (e) => {
+    const input = e.target.closest(".target-edit");
+    if (!input) return;
+    const bId = parseInt(input.dataset.bid, 10);
+    const ok = await saveWatchTarget(bId, input.value);
+    input.classList.toggle("invalid", !ok);
+    if (ok) {
+        const n = Math.round(parseFloat(input.value) * 100) / 100;
+        if (Number.isFinite(n)) input.value = n.toFixed(2);
+    }
+});
+
+document.getElementById("list")?.addEventListener(
+    "blur",
+    (e) => {
+        if (!e.target.classList?.contains("target-edit")) return;
+        setTimeout(() => {
+            if (document.activeElement?.classList?.contains("target-edit")) return;
+            loadList();
+        }, 0);
+    },
+    true
+);
 
 const CHART_RANGES = {
     day: 24 * 60 * 60 * 1000,
@@ -1062,6 +1201,21 @@ function formatEuro(v) {
     return `€${Number(v).toFixed(2)}`;
 }
 
+async function saveWatchTarget(bId, raw) {
+    const price = parseFloat(raw);
+    if (!Number.isFinite(bId) || !Number.isFinite(price) || price <= 0) return false;
+    const target = Math.round(price * 100) / 100;
+    if (target < 0.01) return false;
+    const data = await chrome.storage.local.get(["watchList"]);
+    const list = (data.watchList || []).map(normalizeWatchItem);
+    const idx = list.findIndex((x) => Number(x.bId) === Number(bId));
+    if (idx < 0) return false;
+    if (Number(list[idx].target) === target) return true;
+    list[idx] = { ...list[idx], target };
+    await chrome.storage.local.set({ watchList: list });
+    return true;
+}
+
 function channelBadge(item) {
     if (item.watchZero && item.watchNormal) {
         return `<span class="badge both">${t("channel.zeroPlusNormal")}</span>`;
@@ -1167,7 +1321,10 @@ async function loadAll() {
         "soundPanelOpen",
         "debugPanelOpen",
         "proPanelOpen",
-        "licenseKey"
+        "importDeckPanelOpen",
+        "licenseKey",
+        "defaultImportDiscountPercent",
+        "importDeckProgress"
     ]);
 
     if (data.token) {
@@ -1176,6 +1333,7 @@ async function loadAll() {
     updateTokenBanner(data.token || "");
     setActiveTab(data.activeTab || "carte");
     restoreCollapsiblePanels(data);
+    syncImportDeckLayout();
 
     const poll = clampPollMinutes(data.pollMinutes ?? FREE_POLL_MINUTES, entitlementState.resolved);
     document.getElementById("pollMinutes").value = poll;
@@ -1199,6 +1357,10 @@ async function loadAll() {
     if (data.defaultTargetPrice != null && Number(data.defaultTargetPrice) > 0) {
         document.getElementById("targetPrice").value = String(data.defaultTargetPrice);
     }
+
+    const importPctEl = document.getElementById("importDiscountPercent");
+    if (importPctEl) importPctEl.value = String(normalizeImportPercent(data.defaultImportDiscountPercent));
+    applyImportProgress(data.importDeckProgress);
 
     let watchZero = data.defaultWatchZero !== undefined ? Boolean(data.defaultWatchZero) : true;
     let watchNormal = data.defaultWatchNormal !== undefined ? Boolean(data.defaultWatchNormal) : false;
@@ -1380,7 +1542,8 @@ function loadList() {
                     <div class="card-body">
                       <div>${title} ${channelBadge(item)}</div>
                       <div class="card-meta">
-                        ${escapeHtml(t("card.max"))} <b>${formatEuro(item.target)}</b>
+                        ${escapeHtml(t("card.max"))}
+                        <input type="number" class="target-edit" step="0.01" min="0.01" data-bid="${item.bId}" value="${Number(item.target).toFixed(2)}" title="${escapeHtml(t("card.maxTitle"))}" aria-label="${escapeHtml(t("card.maxTitle"))}">
                         · <span class="badge ${autoClass}">${escapeHtml(autoText)}</span>
                         ${qtyBadge ? ` · ${qtyBadge}` : ""}
                         ${pausedBadge ? ` · ${pausedBadge}` : ""}
@@ -1567,7 +1730,9 @@ function setStatusUi(ok, message) {
 
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
-    if (changes.watchList) loadList();
+    if (changes.watchList && !document.activeElement?.classList?.contains("target-edit")) {
+        loadList();
+    }
     if (changes.cartArchive) loadCartArchive();
     if (changes.priceHistory && chartState.bId) renderPriceChart();
     if (changes.token) updateTokenBanner(changes.token.newValue || "");
@@ -1577,6 +1742,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (changes.lastStatus && changes.lastStatus.newValue) {
         const s = changes.lastStatus.newValue;
         setStatusUi(s.ok, s.message);
+    }
+    if (changes.importDeckProgress) {
+        applyImportProgress(changes.importDeckProgress.newValue);
     }
 });
 

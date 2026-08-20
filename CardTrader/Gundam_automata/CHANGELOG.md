@@ -1,5 +1,11 @@
 # Changelog — Crometium TCG
 
+## 0.8.x — Import lista mazzo + Max editabile
+
+- **Import lista** (`2x GD05-111`): risolve i codici set, inserisce in watchlist, target = minimo trovato scontato di una % (default 5).
+- Form import a tutta finestra popup (fino a 800×600) quando il pannello è aperto.
+- **Max** in lista è un campo numerico modificabile dopo l’inserimento.
+
 ## 0.8.x — Auto-cart qty + filtri finish
 
 - **Auto-cart a quantità** (Pro): campo `wantQty` (1–99); fill greedy dai listing più economici rispettando lo stock; progresso `cartedQty/wantQty`.

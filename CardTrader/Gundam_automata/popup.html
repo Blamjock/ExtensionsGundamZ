@@ -3,12 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <style>
+    html, body {
+      box-sizing: border-box;
+    }
     body {
       width: 400px;
       padding: 12px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f4f4f9;
       margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    html.import-deck-open,
+    body.import-deck-open {
+      width: 800px;
+      height: 600px;
+      max-width: 800px;
+      max-height: 600px;
+    }
+    body.import-deck-open {
+      overflow: hidden;
+    }
+    #titleRow, #planMeta, #timer-box, #status-box, .tab-bar {
+      flex: 0 0 auto;
     }
     h3 { margin: 0 0 8px; color: #333; font-size: 1.1em; }
     #timer-box {
@@ -81,6 +99,16 @@
 
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
+    #panel-carte.tab-panel.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+    body.import-deck-open #panel-carte .section {
+      flex: 0 0 auto;
+    }
 
     .section { margin-bottom: 14px; }
     .section-label {
@@ -275,6 +303,70 @@
     #saveTokenBtn:hover { background: #2c3e50; }
     #addBtn { background: #27ae60; color: white; }
     #addBtn:hover { background: #219150; }
+    #importDeckBtn { background: #16a085; color: white; }
+    #importDeckBtn:hover { background: #138d75; }
+    #importDeckBtn:disabled { background: #bdc3c7; cursor: default; }
+    #importDeckDetails[open] {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #importDeckDetails[open] summary { flex: 0 0 auto; }
+    #importDeckDetails[open] > .import-deck-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    #deckImportText {
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 260px;
+      height: 100%;
+      resize: none;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+      line-height: 1.45;
+      box-sizing: border-box;
+    }
+    .import-percent-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .import-percent-row label {
+      flex: 1;
+      font-size: 0.82em;
+      color: #444;
+    }
+    #importDiscountPercent {
+      width: 72px;
+      flex: 0 0 72px;
+    }
+    #importDeckStatus {
+      font-size: 0.75em;
+      color: #555;
+      min-height: 1.2em;
+      line-height: 1.35;
+      flex: 0 0 auto;
+    }
+    #importDeckStatus.err { color: #c0392b; }
+    #importDeckStatus.ok { color: #1e8449; }
+    .target-edit {
+      width: 76px;
+      margin: 0 0 0 4px;
+      padding: 3px 6px;
+      font-size: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .target-edit.invalid { border-color: #e74c3c; }
     #fillFromPageBtn { background: #e67e22; color: white; }
     #fillFromPageBtn:hover { background: #d35400; }
     #fillFromPageBtn:disabled { background: #bdc3c7; cursor: default; }
@@ -315,6 +407,9 @@
       max-height: 240px;
       overflow-y: auto;
       margin-bottom: 4px;
+    }
+    body.import-deck-open #list {
+      max-height: 96px;
     }
     .card-item {
       background: white;
@@ -793,6 +888,20 @@
       </div>
       <div id="list"></div>
     </div>
+
+    <details id="importDeckDetails" class="collapsible" data-panel="importDeckPanelOpen">
+      <summary data-i18n="import.summary">Importa lista mazzo</summary>
+      <div class="input-group collapsible-body import-deck-body">
+        <textarea id="deckImportText" rows="14" data-i18n-placeholder="import.placeholder" placeholder="2x GD05-111"></textarea>
+        <div class="import-percent-row">
+          <label for="importDiscountPercent" data-i18n="import.percent">Sconto sul minimo (%)</label>
+          <input type="number" id="importDiscountPercent" min="1" max="50" step="1" value="5" data-i18n-title="import.percentTitle" title="Prezzo max = offerta più bassa trovata meno questa percentuale">
+        </div>
+        <p class="filter-hint" data-i18n="import.hint">Usa canali e filtri di Aggiungi carta</p>
+        <button type="button" id="importDeckBtn" data-i18n="import.submit">Importa lista</button>
+        <div id="importDeckStatus"></div>
+      </div>
+    </details>
 
     <details id="addCardDetails" class="collapsible" data-panel="addCardPanelOpen">
       <summary data-i18n="add.summary">Aggiungi carta</summary>

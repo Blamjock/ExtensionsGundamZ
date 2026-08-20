@@ -8,6 +8,7 @@ import {
     ensureInstallAt,
     FREE_POLL_MINUTES,
     loadResolvedEntitlement,
+    maxCardsFor,
     needsPeriodicVerify
 } from "./entitlements.js";
 import { activateLicense, clearLicense, verifyLicense } from "./licenseApi.js";
@@ -23,9 +24,17 @@ import {
     listingStock,
     matchesListingFilters,
     marketplaceFoilParam,
+    normalizeWantQty,
     normalizeWatchItem,
     prepareWatchList
 } from "./watchItem.js";
+import {
+    computeTargetFromMin,
+    createCatalogCache,
+    normalizeImportPercent,
+    parseDeckText,
+    resolveParsedLine
+} from "./deckImport.js";
 
 const BASE_URL = "https://api.cardtrader.com/api/v2";
 const ALARM_NAME = "sniperLoop";
@@ -157,6 +166,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 sendResponse({ ...result, resolved: info.resolved });
             })
             .catch((err) => sendResponse({ ok: false, error: String(err) }));
+        return true;
+    }
+    if (message?.type === "importDeckList") {
+        importDeckList(message)
+            .then((result) => sendResponse(result))
+            .catch((err) => sendResponse({ ok: false, error: String(err?.message || err) }));
         return true;
     }
 });
@@ -296,7 +311,8 @@ async function migrateStorage() {
         "pollSeconds",
         "debugMode",
         "installAt",
-        "entitlement"
+        "entitlement",
+        "importDeckProgress"
     ]);
     const updates = {};
 
@@ -322,6 +338,15 @@ async function migrateStorage() {
 
     if (!data.watchList) {
         updates.watchList = (data.sniperList || []).map(normalizeWatchItem);
+    }
+    if (data.importDeckProgress?.running) {
+        updates.importDeckProgress = {
+            running: false,
+            current: Number(data.importDeckProgress.current) || 0,
+            total: Number(data.importDeckProgress.total) || 0,
+            code: "",
+            phase: "idle"
+        };
     }
 
     if (Object.keys(updates).length > 0) {
@@ -505,6 +530,276 @@ async function fetchMarketplaceListings(token, bId, meta = {}) {
 
 function delayMs(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+let importDeckRunning = false;
+
+async function setImportDeckProgress(progress) {
+    await chrome.storage.local.set({ importDeckProgress: progress });
+}
+
+function joinCodes(codes, max = 8) {
+    const list = (codes || []).filter(Boolean);
+    if (!list.length) return "";
+    if (list.length <= max) return list.join(", ");
+    return `${list.slice(0, max).join(", ")}…`;
+}
+
+function formatImportStatus(report) {
+    const parts = [
+        t("import.done", {
+            added: report.added.length,
+            updated: report.updated.length
+        })
+    ];
+    if (report.notFound.length) {
+        parts.push(t("import.reportNotFound", { codes: joinCodes(report.notFound) }));
+    }
+    if (report.ambiguous.length) {
+        parts.push(t("import.reportAmbiguous", { codes: joinCodes(report.ambiguous) }));
+    }
+    if (report.noListings.length) {
+        parts.push(t("import.reportNoListings", { codes: joinCodes(report.noListings) }));
+    }
+    if (report.capped.length) {
+        parts.push(t("import.reportCapped", { codes: joinCodes(report.capped) }));
+    }
+    if (report.errors.length) {
+        parts.push(t("import.reportErrors", { count: report.errors.length }));
+    }
+    return parts.join(" · ");
+}
+
+async function importDeckList(message) {
+    if (importDeckRunning) {
+        return { ok: false, error: "busy", message: t("import.busy") };
+    }
+    importDeckRunning = true;
+
+    const parsed = parseDeckText(message?.text);
+    const percent = normalizeImportPercent(message?.percent);
+    const report = {
+        added: [],
+        updated: [],
+        notFound: [],
+        ambiguous: [],
+        noListings: [],
+        capped: [],
+        errors: []
+    };
+
+    try {
+        if (!parsed.length) {
+            return { ok: false, error: "no_lines", message: t("import.noLines"), report, hitCap: false };
+        }
+
+        const data = await chrome.storage.local.get(["token", "watchList", "sniperList"]);
+        const token = String(data.token || "").trim();
+        if (!token) {
+            return { ok: false, error: "no_token", message: t("import.needToken"), report, hitCap: false };
+        }
+
+        const { resolved } = await loadResolvedEntitlement();
+        let watchZero = Boolean(message?.watchZero);
+        let watchNormal = Boolean(message?.watchNormal);
+        const channels = clampChannels(watchZero, watchNormal, resolved);
+        watchZero = channels.watchZero;
+        watchNormal = channels.watchNormal;
+        const autoCart = clampAutoCart(Boolean(message?.autoCart), resolved);
+        const languages = Array.isArray(message?.languages) ? message.languages : [];
+        const conditions = Array.isArray(message?.conditions) ? message.conditions : [];
+        const foilModes = Array.isArray(message?.foilModes) ? message.foilModes : [];
+
+        let list = (data.watchList || (data.sniperList || []).map((x) => x)).map(normalizeWatchItem);
+        const maxCards = maxCardsFor(resolved);
+        const historySamples = {};
+        const apiGet = async (path) => {
+            const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
+            const result = await apiFetch(
+                url,
+                { headers: { Authorization: `Bearer ${token}` } },
+                { kind: "catalog", label: path }
+            );
+            if (!result.ok) throw new Error(`HTTP ${result.status}`);
+            return result.body;
+        };
+        const catalog = createCatalogCache(apiGet);
+
+        await setImportDeckProgress({
+            running: true,
+            current: 0,
+            total: parsed.length,
+            code: "",
+            phase: "resolve"
+        });
+
+        for (let i = 0; i < parsed.length; i++) {
+            const line = parsed[i];
+            await setImportDeckProgress({
+                running: true,
+                current: i + 1,
+                total: parsed.length,
+                code: line.code,
+                phase: "resolve"
+            });
+
+            let resolvedCard;
+            try {
+                resolvedCard = await resolveParsedLine(line, { apiGet, ...catalog });
+            } catch (err) {
+                report.errors.push(line.code);
+                console.error("importDeckList resolve:", line.code, err);
+                continue;
+            }
+
+            if (resolvedCard.status === "not_found") {
+                report.notFound.push(line.code);
+                continue;
+            }
+            if (resolvedCard.status === "ambiguous") {
+                report.ambiguous.push(line.code);
+                continue;
+            }
+
+            const bp = resolvedCard.blueprint;
+            const bId = Number(bp.id);
+            if (!isValidBlueprintId(bId)) {
+                report.notFound.push(line.code);
+                continue;
+            }
+
+            const existing = list.findIndex((x) => Number(x.bId) === bId);
+            if (existing < 0 && list.length >= maxCards) {
+                report.capped.push(line.code);
+                continue;
+            }
+
+            await setImportDeckProgress({
+                running: true,
+                current: i + 1,
+                total: parsed.length,
+                code: line.code,
+                phase: "price"
+            });
+
+            const apiLanguage =
+                Array.isArray(languages) && languages.length === 1 && /^[a-z]{2}$/.test(languages[0])
+                    ? languages[0]
+                    : null;
+            const apiFoil = marketplaceFoilParam(foilModes);
+
+            let marketResult;
+            try {
+                marketResult = await fetchMarketplaceListings(token, bId, {
+                    language: apiLanguage,
+                    foil: apiFoil
+                });
+            } catch (err) {
+                report.errors.push(line.code);
+                console.error("importDeckList marketplace:", line.code, err);
+                continue;
+            }
+            if (!marketResult?.ok) {
+                report.errors.push(line.code);
+                continue;
+            }
+
+            const listings = extractMarketplaceListings(marketResult.body, bId);
+            const filters = { languages, conditions, foilModes };
+            const { bestZero, bestNormal } = splitListings(listings, undefined, filters);
+            const zeroPrice = listingPriceEuro(bestZero);
+            const normalPrice = listingPriceEuro(bestNormal);
+            const mins = [];
+            if (watchZero && zeroPrice != null) mins.push(zeroPrice);
+            if (watchNormal && normalPrice != null) mins.push(normalPrice);
+            if (!mins.length) {
+                report.noListings.push(line.code);
+                continue;
+            }
+
+            const minPrice = Math.min(...mins);
+            const target = computeTargetFromMin(minPrice, percent);
+            if (target == null) {
+                report.noListings.push(line.code);
+                continue;
+            }
+
+            const wantQty = normalizeWantQty(line.qty);
+            const prev = existing >= 0 ? list[existing] : null;
+            const now = Date.now();
+            const label = bp.name
+                ? `${bp.name}${line.code ? ` · ${line.code}` : ""}`
+                : line.code;
+            const prevCarted = prev ? Number(prev.cartedQty || 0) : 0;
+            const entry = normalizeWatchItem({
+                bId,
+                target,
+                autoCart,
+                wantQty,
+                cartedQty: Math.min(prevCarted, wantQty),
+                paused: Boolean(prev?.paused) && prevCarted >= wantQty,
+                label,
+                watchZero,
+                watchNormal,
+                languages,
+                conditions,
+                foilModes,
+                lastAlertProductId: prev?.lastAlertProductId ?? null,
+                lastAlertAt: prev?.lastAlertAt ?? null,
+                lastAlertPrice: prev?.lastAlertPrice ?? null,
+                lastAlertChannel: prev?.lastAlertChannel ?? null,
+                lastSeenPrice: minPrice,
+                lastSeenZero: zeroPrice,
+                lastSeenNormal: normalPrice,
+                lastSeenZeroAt: zeroPrice != null ? now : null,
+                lastSeenNormalAt: normalPrice != null ? now : null,
+                minZero: zeroPrice != null ? trackMinPrice(prev?.minZero, zeroPrice) : prev?.minZero ?? null,
+                minNormal:
+                    normalPrice != null ? trackMinPrice(prev?.minNormal, normalPrice) : prev?.minNormal ?? null,
+                lastCartProductId: prev?.lastCartProductId ?? null
+            });
+
+            if (existing >= 0) {
+                list[existing] = entry;
+                report.updated.push(line.code);
+            } else {
+                list.push(entry);
+                report.added.push(line.code);
+            }
+
+            historySamples[String(bId)] = { t: now, z: zeroPrice, n: normalPrice };
+        }
+
+        const prepared = prepareWatchList(list, resolved);
+        await saveWatchList(prepared.list);
+        await mergePriceHistory(historySamples);
+
+        const hitCap = report.capped.length > 0;
+        const imported = report.added.length + report.updated.length;
+        const ok = imported > 0;
+        const statusMessage = formatImportStatus(report);
+        await chrome.storage.local.set({
+            lastStatus: { ok, message: statusMessage },
+            defaultImportDiscountPercent: percent
+        });
+
+        return { ok, message: statusMessage, report, hitCap, percent };
+    } catch (err) {
+        const messageText = String(err?.message || err);
+        await chrome.storage.local.set({
+            lastStatus: { ok: false, message: messageText }
+        });
+        return { ok: false, error: "failed", message: messageText, report, hitCap: false };
+    } finally {
+        importDeckRunning = false;
+        await setImportDeckProgress({
+            running: false,
+            current: parsed.length,
+            total: parsed.length,
+            code: "",
+            phase: "done"
+        });
+    }
 }
 
 /** Ripristina preferenze utente in storage (Free clamp solo a runtime nel loop). */

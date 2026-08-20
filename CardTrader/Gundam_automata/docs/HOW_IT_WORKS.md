@@ -27,6 +27,15 @@ flowchart LR
   BG -->|notifica + suono| UI
 ```
 
+## Import lista mazzo
+
+Pannello **Importa lista mazzo**: all’apertura il popup si allarga (max 800×600) e la textarea occupa lo spazio restante.
+
+1. Parse `Nx CODICE` in [`deckImport.js`](../deckImport.js).
+2. Messaggio `importDeckList`: catalogo CT + marketplace → `target = min * (1 - percent/100)`.
+3. `wantQty` dalla riga; canali/filtri dal form Aggiungi carta.
+4. **Max** in lista è un input editabile (`item.target`).
+
 ## Ciclo di polling
 
 1. All’installazione / startup: `migrateStorage()` + `ensureAlarm()`.
