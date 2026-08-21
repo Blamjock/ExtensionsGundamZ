@@ -17,13 +17,19 @@
     }
     html.import-deck-open,
     body.import-deck-open {
-      width: 800px;
-      height: 600px;
-      max-width: 800px;
-      max-height: 600px;
+      width: 640px;
+      height: 640px;
+      max-width: 640px;
+      max-height: 640px;
     }
     body.import-deck-open {
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    body.import-deck-open #panel-carte.tab-panel.active {
+      flex: 0 0 auto;
+      min-height: auto;
+      overflow: visible;
     }
     #titleRow, #planMeta, #timer-box, #status-box, .tab-bar {
       flex: 0 0 auto;
@@ -307,26 +313,24 @@
     #importDeckBtn:hover { background: #138d75; }
     #importDeckBtn:disabled { background: #bdc3c7; cursor: default; }
     #importDeckDetails[open] {
-      flex: 1 1 auto;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
+      overflow: visible;
     }
     #importDeckDetails[open] summary { flex: 0 0 auto; }
     #importDeckDetails[open] > .import-deck-body {
-      flex: 1 1 auto;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
+      overflow: visible;
     }
     #deckImportText {
-      flex: 1 1 auto;
+      flex: 0 0 auto;
       width: 100%;
-      min-height: 260px;
-      height: 100%;
-      resize: none;
+      min-height: 200px;
+      height: 220px;
+      resize: vertical;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 4px;
